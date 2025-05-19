@@ -1,0 +1,9 @@
+{
+  "executable": "./llama.cpp-vulkan/build/bin/llama-bench",
+  "tests": [
+    {"name": "vulkan_fa1", "args": ["-fa", "1"]},
+    {"name": "vulkan_fa0", "args": ["-fa", "0"]}
+  ],
+  "p_values": [128, 256, 512, 1024, 2048, 4096, 8192],
+  "n_values": [128, 256, 512, 1024, 2048, 4096, 8192]
+}
