@@ -1,282 +1,149 @@
 #!/usr/bin/env python3
 """llama_cpp_bencher.py
 
-Benchmark multiple **llama.cpp** builds across prompt‑processing (PP) and
-token‑generation (TG) sweeps, capture peak memory, and emit:
+End‑to‑end benchmark runner for multiple **llama.cpp** variants.
 
-* **results.jsonl** – one record per run
-* **PNG charts** per build for PP & TG sweeps
-* **summary_<model>.md** – quick Markdown table (PP512 & TG128)
-
-### Key changes (2025‑05‑28)
-* **Default build roots** now under **/home/lhl/llama.cpp-* **.
-* Sweep logic matches upstream *llama-bench* semantics:
-  * **PP sweep:** `-p <pp>`  & `-n 0`
-  * **TG sweep:** `-p 0`     & `-n <tg>`
-* `--outdir` is **optional**.  If omitted, the model’s stem (e.g. *llama-2-7b.Q4_0*)
-  becomes the output directory.
-
-Run example:
-```bash
-python llama_cpp_bencher.py \
-  --model /models/gguf/llama-2-7b.Q4_0.gguf \
-  --flags "-fa 1 -mmap"
-```
-This creates `llama-2-7b.Q4_0/` alongside your working dir, containing all
-artifacts.
+New in this revision (JSONL ingestion)
+======================================
+* Every `llama-bench` call is now forced to `-o jsonl` and the _full_ JSON
+  record returned by the binary is streamed to **raw_runs.jsonl**.
+* `tokens_per_sec` is taken from `avg_ts` in that JSON object ­– no more fragile
+  table parsing.
+* The last JSON object of each run is embedded in the high‑level results as
+  `bench_raw` for easy programmatic re‑use.
 """
 from __future__ import annotations
 
-import argparse
-import datetime as dt
-import json
-import os
-import platform
-import re
-import shlex
-import subprocess as sp
-import sys
-import time
-import textwrap
+import argparse, datetime as dt, json, shlex, subprocess as sp, sys, textwrap, time
 from pathlib import Path
 from threading import Event, Thread
 from typing import Dict, List
+import re
 
 import matplotlib.pyplot as plt
 import pandas as pd
 from tabulate import tabulate
 
 ###############################################################################
-# ------------------------------- CONFIG ------------------------------------ #
+# ---------------------------- BUILD DISCOVERY ------------------------------ #
 ###############################################################################
 
-BUILD_ROOT = Path("/home/lhl/llama.cpp")  # where llama.cpp-* folders live
-
-DEFAULT_BUILDS = {
-    name: str(BUILD_ROOT / f"{name}/build/bin/llama-bench")
-    for name in [
-        "llama.cpp-cpu",
-        "llama.cpp-hip",
-        "llama.cpp-hipblaslt",
-        "llama.cpp-hip-uma",
-        "llama.cpp-hjc4869",
-        "llama.cpp-rocwmma",
-        "llama.cpp-vulkan",
-    ]
-}
-
-# Prompt‑token and generation‑token sweeps (powers of two 1→8192)
-DEFAULT_PP_VALUES = [2 ** i for i in range(0, 14)]
-DEFAULT_TG_VALUES = DEFAULT_PP_VALUES.copy()
-
-DEFAULT_FLAGS = "-fa 1"  # extra llama‑bench flags
+def discover_builds(root: Path) -> Dict[str,str]:
+    return {p.parts[-4]: str(p) for p in root.glob('llama.cpp-*/build/bin/llama-bench')}
 
 ###############################################################################
-# ---------------------------- MEMORY MONITORS ------------------------------ #
+# ----------------------------- MEM MONITORS -------------------------------- #
 ###############################################################################
 
-def _first_int(text: str) -> int:
-    m = re.search(r"(\d+)", text)
-    return int(m.group(1)) if m else 0
+def _first_int(txt:str)->int:
+    m=re.search(r"(\d+)",txt);return int(m.group(1)) if m else 0
 
-
-def monitor_rocm_vram(stop: Event, peaks: Dict[str, int], interval: float = 1.0):
-    initial = peak = 0
+def _monitor(cmd:List[str],parse,field:str,stop:Event,peaks:Dict[str,int]):
+    peak=0
     while not stop.is_set():
         try:
-            out = sp.check_output(["rocm-smi", "--showmeminfo", "vram", "--csv"], text=True)
-            used_bytes = int(out.splitlines()[1].split(",")[2])
-            used = used_bytes // (1024 * 1024)
-            if not initial:
-                initial = used
-            peak = max(peak, used)
+            used=parse(sp.check_output(cmd,text=True))
+            peak=max(peak,used)
         except Exception:
             pass
-        time.sleep(interval)
-    if peak:
-        peaks["vram_peak_mib"] = peak
+        time.sleep(1)
+    if peak:peaks[field]=peak
 
+def parse_rocm(out:str)->int:
+    try:return int(out.splitlines()[1].split(',')[2])//(1024*1024)
+    except:return 0
 
-def monitor_gtt(stop: Event, peaks: Dict[str, int], interval: float = 1.0):
-    initial = peak = 0
-    while not stop.is_set():
-        try:
-            out = sp.check_output(["amdgpu_top", "-d"], text=True)
-            line = next((l for l in out.splitlines() if re.match(r"^\s*GTT", l)), "")
-            used = _first_int(line)
-            if not initial:
-                initial = used
-            peak = max(peak, used)
-        except Exception:
-            pass
-        time.sleep(interval)
-    if peak:
-        peaks["gtt_peak_mib"] = peak
+def parse_gtt(out:str)->int:
+    line=next((l for l in out.splitlines() if re.match(r"^\s*GTT",l)),"");return _first_int(line)
 
-
-def monitor_sysram(stop: Event, peaks: Dict[str, int], interval: float = 1.0):
-    initial = peak = 0
-    while not stop.is_set():
-        try:
-            with open("/proc/meminfo") as fh:
-                memtotal = memavail = 0
-                for l in fh:
-                    if l.startswith("MemTotal"):
-                        memtotal = _first_int(l)
-                    elif l.startswith("MemAvailable"):
-                        memavail = _first_int(l)
-            used = (memtotal - memavail) // 1024  # kB → MiB
-            if not initial:
-                initial = used
-            peak = max(peak, used)
-        except Exception:
-            pass
-        time.sleep(interval)
-    if peak:
-        peaks["system_ram_peak_mib"] = peak
+def parse_meminfo(out:str)->int:
+    t=a=0
+    for l in out.splitlines():
+        if l.startswith('MemTotal'):t=_first_int(l)
+        elif l.startswith('MemAvailable'):a=_first_int(l)
+    return (t-a)//1024
 
 ###############################################################################
-# ------------------------- BENCHMARK EXECUTION ----------------------------- #
+# ------------------------------- BENCH RUN --------------------------------- #
 ###############################################################################
 
-def run_bench(binary: str, model: str, flags: str, mode: str, value: int, gpu_mon: bool) -> Dict:
-    """Run one llama‑bench invocation and return collected metrics."""
+def run_bench(bin:str,model:str,flags:str,mode:str,val:int,gpu:bool,raw_sink)->Dict:
+    if val==0:return{}
+    bench_args=f"-p {val} -n 0" if mode=='pp' else f"-p 0 -n {val}"
+    cmd=f"{shlex.quote(bin)} -m {shlex.quote(model)} {bench_args} {flags} -o jsonl"
+    print("\n[RUN]",cmd)
+    stop=Event();peaks={}
+    sysmon=Thread(target=_monitor,args=(['cat','/proc/meminfo'],parse_meminfo,'system_ram_peak_mib',stop,peaks),daemon=True);sysmon.start()
+    mons=[sysmon]
+    if gpu:
+        mons+=[Thread(target=_monitor,args=(['rocm-smi','--showmeminfo','vram','--csv'],parse_rocm,'vram_peak_mib',stop,peaks),daemon=True),
+               Thread(target=_monitor,args=(['amdgpu_top','-d'],parse_gtt,'gtt_peak_mib',stop,peaks),daemon=True)]
+        [m.start() for m in mons[1:]]
 
-    if mode == "pp":
-        bench_args = f"-p {value} -n 0"
-    elif mode == "tg":
-        bench_args = f"-p 0 -n {value}"
-    else:
-        raise ValueError("mode must be 'pp' or 'tg'")
-
-    cmd = f"{shlex.quote(binary)} -m {shlex.quote(model)} {bench_args} {flags}"
-    print("\n[RUN]", cmd)
-
-    stop = Event()
-    peaks: Dict[str, int] = {}
-    monitors = [Thread(target=monitor_sysram, args=(stop, peaks), daemon=True)]
-    if gpu_mon:
-        monitors += [
-            Thread(target=monitor_rocm_vram, args=(stop, peaks), daemon=True),
-            Thread(target=monitor_gtt, args=(stop, peaks), daemon=True),
-        ]
-    for t in monitors:
-        t.start()
-
-    tok_s = 0.0
-    ttft_ms = None
-    start = time.time()
-
-    proc = sp.Popen(shlex.split(cmd), stdout=sp.PIPE, stderr=sp.STDOUT, text=True, bufsize=1)
+    last_json=None
+    start=time.time()
+    proc=sp.Popen(shlex.split(cmd),stdout=sp.PIPE,stderr=sp.STDOUT,text=True,bufsize=1)
     try:
         for line in proc.stdout:
-            sys.stdout.write(line)
             try:
-                rec = json.loads(line)
-                tok_s = rec.get("tok_per_s", tok_s)
-                ttft_ms = rec.get("ttft_ms", ttft_ms)
-            except Exception:
-                pass
+                rec=json.loads(line)
+                last_json=rec
+                raw_sink.write(line)
+            except json.JSONDecodeError:
+                sys.stdout.write(line)
     finally:
-        proc.wait()
-        stop.set()
-        for t in monitors:
-            t.join()
+        proc.wait();stop.set();[m.join() for m in mons]
 
-    rec = {
-        "timestamp": dt.datetime.now().astimezone().isoformat(),
-        "binary": binary,
-        "mode": mode,
-        "value": value,
-        "tokens_per_sec": tok_s,
-        "ttft_ms": ttft_ms,
-        "runtime_s": time.time() - start,
-    }
-    rec.update(peaks)
-    return rec
+    tok_s= last_json.get('avg_ts') if last_json else None
+    return {'timestamp':dt.datetime.now().astimezone().isoformat(),'mode':mode,'value':val,'tokens_per_sec':tok_s,'bench_raw':last_json,**peaks}
 
 ###############################################################################
-# -------------------------- PLOTTING & TABLES ------------------------------ #
+# -------------------------------- PLOT ------------------------------------- #
 ###############################################################################
 
-def plot_series(df: pd.DataFrame, build: str, mode: str, outdir: Path):
-    sub = df[(df.build == build) & (df.mode == mode)].sort_values("value")
-    if sub.empty:
-        return
-    fig, ax1 = plt.subplots(figsize=(8, 5))
-    ax1.set_title(f"{build} – {'PP' if mode=='pp' else 'TG'} sweep")
-    ax1.set_xlabel("Token count")
-    ax1.set_ylabel("tokens/s")
-    ax1.plot(sub.value, sub.tokens_per_sec, marker="o")
-
-    ax2 = ax1.twinx()
-    ax2.set_ylabel("VRAM peak (MiB)")
-    ax2.plot(sub.value, sub.vram_peak_mib, linestyle="--", marker="x")
-
-    ax1.grid(True, alpha=0.3, linestyle=":")
-    fig.tight_layout()
-    fig.savefig(outdir / f"{build}_{mode}.png", dpi=150)
-    plt.close(fig)
-
-
-def write_summary(df: pd.DataFrame, model: str, outdir: Path):
-    core_cols = ["build", "tokens_per_sec", "vram_peak_mib", "gtt_peak_mib", "system_ram_peak_mib", "ttft_ms"]
-    rows = []
-    for build in df.build.unique():
-        pp = df[(df.build == build) & (df.mode == "pp") & (df.value == 512)].iloc[0:1]
-        tg = df[(df.build == build) & (df.mode == "tg") & (df.value == 128)].iloc[0:1]
-        rows.extend([pp, tg])
-    md = tabulate(pd.concat(rows)[core_cols], headers="keys", tablefmt="github")
-    (outdir / f"summary_{model}.md").write_text(md)
+def plot(df,build,mode,out):
+    d=df[(df.build==build)&(df.mode==mode)].sort_values('value')
+    if d.empty:return
+    fig,ax1=plt.subplots(figsize=(8,5));ax1.set_title(f"{build} – {mode.upper()} sweep");ax1.set_xlabel('Tokens');ax1.set_ylabel('tokens/s');ax1.plot(d.value,d.tokens_per_sec,marker='o');ax1.grid(True,alpha=.3,linestyle=':')
+    if 'vram_peak_mib'in d.columns and d.vram_peak_mib.notna().any():
+        ax2=ax1.twinx();ax2.set_ylabel('VRAM MiB');ax2.plot(d.value,d.vram_peak_mib,marker='x',linestyle='--')
+    fig.tight_layout();fig.savefig(out/f"{build}_{mode}.png",dpi=150);plt.close(fig)
 
 ###############################################################################
-# --------------------------------- MAIN ------------------------------------ #
+# -------------------------------- MAIN ------------------------------------- #
 ###############################################################################
 
 def main():
-    p = argparse.ArgumentParser(description=textwrap.dedent(__doc__), formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--model", required=True, help="Path to GGUF model")
-    p.add_argument("--outdir", help="Directory for outputs (defaults to model stem)")
-    p.add_argument("--builds", nargs="*", help="Subset of build names or explicit binaries")
-    p.add_argument("--flags", default=DEFAULT_FLAGS, help="Extra flags passed verbatim to llama-bench")
-    p.add_argument("--pp", nargs="*", type=int, help="Prompt sizes to sweep")
-    p.add_argument("--tg", nargs="*", type=int, help="Generation sizes to sweep")
-    p.add_argument("--skip_gpu_mon", action="store_true", help="Disable GPU memory monitors")
-    args = p.parse_args()
+    parser=argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter,description='llama.cpp benchmark helper')
+    parser.add_argument('-m','--model',required=True);parser.add_argument('-o','--outdir');parser.add_argument('-b','--builds',nargs='*');parser.add_argument('--build-root',default=Path('/home/lhl/llama.cpp'),type=Path);parser.add_argument('-p','--pp',nargs='*',type=int);parser.add_argument('-n','--tg',nargs='*',type=int);parser.add_argument('--flags',default='-fa 1');parser.add_argument('--skip-gpu-mon',action='store_true');parser.add_argument('--list-builds',action='store_true')
+    args=parser.parse_args()
 
-    outdir = Path(args.outdir) if args.outdir else Path(Path(args.model).stem)
-    outdir.mkdir(parents=True, exist_ok=True)
+    found=discover_builds(args.build_root)
+    if args.list_builds:
+        print('\n'.join(f"{k}: {v}" for k,v in found.items()));return
+    sel=args.builds or list(found.keys())
+    builds={name:(found.get(name,name)) for name in sel}
 
-    builds = args.builds or list(DEFAULT_BUILDS.keys())
-    pp_vals = args.pp or DEFAULT_PP_VALUES
-    tg_vals = args.tg or DEFAULT_TG_VALUES
+    out=Path(args.outdir) if args.outdir else Path(Path(args.model).stem);out.mkdir(parents=True,exist_ok=True)
+    pp=args.pp or [2**i for i in range(14)];tg=args.tg or pp
 
-    jsonl_path = outdir / "results.jsonl"
-    with open(jsonl_path, "w") as jl:
-        for build in builds:
-            binary = DEFAULT_BUILDS.get(build, build)  # explicit path passes through
-            commit = ""
-            repo = Path(binary).parent.parent
-            if (repo / ".git").exists():
-                try:
-                    commit = sp.check_output(["git", "--git-dir", str(repo / ".git"), "rev-parse", "--short", "HEAD"], text=True).strip()
-                except Exception:
-                    pass
-            for mode, sweep in (("pp", pp_vals), ("tg", tg_vals)):
-                for val in sweep:
-                    rec = run_bench(binary, args.model, args.flags, mode, val, not args.skip_gpu_mon)
-                    rec.update({"build": build, "commit": commit})
-                    jl.write(json.dumps(rec) + "\n")
-                    jl.flush()
+    raw_file=(out/'raw_runs.jsonl').open('w')
+    records=[]
+    for b,bin in builds.items():
+        for mode,vals in(('pp',pp),('tg',tg)):
+            for v in vals:
+                rec=run_bench(bin,args.model,args.flags,mode,v,not args.skip_gpu_mon,raw_file)
+                if rec:
+                    rec['build']=b;records.append(rec)
+    raw_file.close()
 
-    df = pd.read_json(jsonl_path, lines=True)
+    if not records:
+        print('No data');return
+    df=pd.DataFrame(records);df.to_json(out/'results.jsonl',orient='records',lines=True)
     for build in df.build.unique():
-        for mode in ["pp", "tg"]:
-            plot_series(df, build, mode, outdir)
-    write_summary(df, Path(args.model).stem, outdir)
-    print("\nFinished!  Artifacts in", outdir)
+        for mode in('pp','tg'):plot(df,build,mode,out)
+    tab=tabulate(df[['build','mode','value','tokens_per_sec','vram_peak_mib','gtt_peak_mib','system_ram_peak_mib']],headers='keys',tablefmt='github');(out/'summary.md').write_text(tab)
+    print('Done: artifacts in',out)
 
-
-if __name__ == "__main__":
+if __name__=='__main__':
     main()
-
