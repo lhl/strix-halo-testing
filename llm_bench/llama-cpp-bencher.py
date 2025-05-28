@@ -1,41 +1,29 @@
 #!/usr/bin/env python3
-"""llama_bench_suite.py
+"""llama_cpp_bencher.py
 
-Benchmark multiple llama.cpp builds across prompt‑processing (PP) and
-token‑generation (TG) sweeps, capture peak memory, and produce summary
-artifacts (JSONL, Markdown, PNG charts).
+Benchmark multiple **llama.cpp** builds across prompt‑processing (PP) and
+token‑generation (TG) sweeps, capture peak memory, and emit:
 
-Usage (minimal):
-    python llama_bench_suite.py \
-        --model /models/gguf/shisa-v2-llama3.3-70b.i1-Q4_K_M.gguf \
-        --outdir results_70b
+* **results.jsonl** – one record per run
+* **PNG charts** per build for PP & TG sweeps
+* **summary_<model>.md** – quick Markdown table (PP512 & TG128)
 
-Many parameters can be overridden – see `--help`.
+### Key changes (2025‑05‑28)
+* **Default build roots** now under **/home/lhl/llama.cpp-* **.
+* Sweep logic matches upstream *llama-bench* semantics:
+  * **PP sweep:** `-p <pp>`  & `-n 0`
+  * **TG sweep:** `-p 0`     & `-n <tg>`
+* `--outdir` is **optional**.  If omitted, the model’s stem (e.g. *llama-2-7b.Q4_0*)
+  becomes the output directory.
 
-The script is Linux‑only and expects AMD GPUs with ROCm for GPU backends
-and the following helper tools available on $PATH where relevant:
-    * rocm-smi           – VRAM usage (GPU backends)
-    * amdgpu_top -d      – GTT usage (GPU backends)
-    * free /proc/meminfo – system RAM (CPU backend)
-
-JSONL schema (one record per run):
-{
-  "timestamp": "2025-05-28T06:42:12+09:00",
-  "build": "llama.cpp-hip",
-  "binary": "/home/lhl/llama.cpp/llama.cpp-hip/build/bin/llama-bench",
-  "flags": "-fa 1 -mmap",
-  "mode": "pp",                   # or "tg"
-  "value": 512,                   # prompt‑tokens or gen‑tokens
-  "tokens_per_sec": 335.9,
-  "ttft_ms": 123.4,               # time‑to‑first‑token (if derivable)
-  "vram_peak_mib": 24312,
-  "gtt_peak_mib": 1987,
-  "system_ram_peak_mib": 31294,
-  "runtime_s": 87.2,
-  "kernel": "6.9.2-arch1-1",
-  "rocm_version": "6.1.1",
-  "commit": "1a2b3c4 (2025-05-10)"
-}
+Run example:
+```bash
+python llama_cpp_bencher.py \
+  --model /models/gguf/llama-2-7b.Q4_0.gguf \
+  --flags "-fa 1 -mmap"
+```
+This creates `llama-2-7b.Q4_0/` alongside your working dir, containing all
+artifacts.
 """
 from __future__ import annotations
 
@@ -48,12 +36,11 @@ import re
 import shlex
 import subprocess as sp
 import sys
-import tempfile
-import textwrap
 import time
+import textwrap
 from pathlib import Path
 from threading import Event, Thread
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -63,256 +50,231 @@ from tabulate import tabulate
 # ------------------------------- CONFIG ------------------------------------ #
 ###############################################################################
 
-# Default llama.cpp builds to test (override with --builds)
+BUILD_ROOT = Path("/home/lhl/llama.cpp")  # where llama.cpp-* folders live
+
 DEFAULT_BUILDS = {
-    "llama.cpp-cpu": "/home/lhl/llama.cpp/llama.cpp-cpu/build/bin/llama-bench",
-    "llama.cpp-hip": "/home/lhl/llama.cpp/llama.cpp-hip/build/bin/llama-bench",
-    "llama.cpp-hipblaslt": "/home/lhl/llama.cpp/llama.cpp-hipblaslt/build/bin/llama-bench",
-    "llama.cpp-hip-uma": "/home/lhl/llama.cpp/llama.cpp-hip-uma/build/bin/llama-bench",
-    "llama.cpp-hjc4869": "/home/lhl/llama.cpp/llama.cpp-hjc4869/build/bin/llama-bench",
-    "llama.cpp-rocwmma": "/home/lhl/llama.cpp/llama.cpp-rocwmma/build/bin/llama-bench",
-    "llama.cpp-vulkan": "/home/lhl/llama.cpp/llama.cpp-vulkan/build/bin/llama-bench",
+    name: str(BUILD_ROOT / f"{name}/build/bin/llama-bench")
+    for name in [
+        "llama.cpp-cpu",
+        "llama.cpp-hip",
+        "llama.cpp-hipblaslt",
+        "llama.cpp-hip-uma",
+        "llama.cpp-hjc4869",
+        "llama.cpp-rocwmma",
+        "llama.cpp-vulkan",
+    ]
 }
 
-# Prompt‑processing token counts (powers of two 1→8192)
-DEFAULT_PP_VALUES = [2 ** i for i in range(0, 14)]  # 1 … 8192
-# Generation token counts (same list by default)
+# Prompt‑token and generation‑token sweeps (powers of two 1→8192)
+DEFAULT_PP_VALUES = [2 ** i for i in range(0, 14)]
 DEFAULT_TG_VALUES = DEFAULT_PP_VALUES.copy()
 
-# Additional static flags to pass to llama-bench (may be overridden via CLI)
-DEFAULT_FLAGS = "-fa 1"
+DEFAULT_FLAGS = "-fa 1"  # extra llama‑bench flags
 
 ###############################################################################
 # ---------------------------- MEMORY MONITORS ------------------------------ #
 ###############################################################################
 
-def _parse_first_int(text: str) -> int:
+def _first_int(text: str) -> int:
     m = re.search(r"(\d+)", text)
     return int(m.group(1)) if m else 0
 
 
-def monitor_rocm_vram(interval: float, stop: Event, result: Dict[str, int]):
-    """Monitors VRAM via rocm-smi (MiB) and stores peak."""
+def monitor_rocm_vram(stop: Event, peaks: Dict[str, int], interval: float = 1.0):
     initial = peak = 0
     while not stop.is_set():
         try:
             out = sp.check_output(["rocm-smi", "--showmeminfo", "vram", "--csv"], text=True)
-            # second CSV line, 3rd column = used bytes
             used_bytes = int(out.splitlines()[1].split(",")[2])
             used = used_bytes // (1024 * 1024)
-            if initial == 0:
+            if not initial:
                 initial = used
-            if used > peak:
-                peak = used
+            peak = max(peak, used)
         except Exception:
             pass
         time.sleep(interval)
     if peak:
-        result["vram_peak_mib"] = peak
+        peaks["vram_peak_mib"] = peak
 
 
-def monitor_gtt(interval: float, stop: Event, result: Dict[str, int]):
-    """Monitors GTT via amdgpu_top -d (MiB)."""
+def monitor_gtt(stop: Event, peaks: Dict[str, int], interval: float = 1.0):
     initial = peak = 0
     while not stop.is_set():
         try:
             out = sp.check_output(["amdgpu_top", "-d"], text=True)
-            gtt_line = next((l for l in out.splitlines() if re.search(r"^\s*GTT", l)), "")
-            used = _parse_first_int(gtt_line)
-            if initial == 0:
+            line = next((l for l in out.splitlines() if re.match(r"^\s*GTT", l)), "")
+            used = _first_int(line)
+            if not initial:
                 initial = used
-            if used > peak:
-                peak = used
+            peak = max(peak, used)
         except Exception:
             pass
         time.sleep(interval)
     if peak:
-        result["gtt_peak_mib"] = peak
+        peaks["gtt_peak_mib"] = peak
 
 
-def monitor_sysram(interval: float, stop: Event, result: Dict[str, int]):
-    """Monitors system RAM (MiB) via /proc/meminfo."""
+def monitor_sysram(stop: Event, peaks: Dict[str, int], interval: float = 1.0):
     initial = peak = 0
     while not stop.is_set():
         try:
             with open("/proc/meminfo") as fh:
-                memfree = 0
-                memtotal = 0
-                for line in fh:
-                    if line.startswith("MemTotal"):
-                        memtotal = _parse_first_int(line)
-                    if line.startswith("MemAvailable"):
-                        memfree = _parse_first_int(line)
-                used = (memtotal - memfree) // 1024  # kB→MiB
-                if initial == 0:
-                    initial = used
-                if used > peak:
-                    peak = used
+                memtotal = memavail = 0
+                for l in fh:
+                    if l.startswith("MemTotal"):
+                        memtotal = _first_int(l)
+                    elif l.startswith("MemAvailable"):
+                        memavail = _first_int(l)
+            used = (memtotal - memavail) // 1024  # kB → MiB
+            if not initial:
+                initial = used
+            peak = max(peak, used)
         except Exception:
             pass
         time.sleep(interval)
     if peak:
-        result["system_ram_peak_mib"] = peak
+        peaks["system_ram_peak_mib"] = peak
 
 ###############################################################################
 # ------------------------- BENCHMARK EXECUTION ----------------------------- #
 ###############################################################################
 
-def run_single_bench(binary: str, model: str, flags: str, mode: str, value: int,
-                      monitor_gpu: bool = True) -> Dict:
-    """Run one llama-bench invocation and capture metrics and memory peaks."""
+def run_bench(binary: str, model: str, flags: str, mode: str, value: int, gpu_mon: bool) -> Dict:
+    """Run one llama‑bench invocation and return collected metrics."""
 
-    cmd = f"{shlex.quote(binary)} -m {shlex.quote(model)} -n 0 {flags}"
     if mode == "pp":
-        cmd += f" -p {value}"
+        bench_args = f"-p {value} -n 0"
     elif mode == "tg":
-        cmd += f" -n {value}"
+        bench_args = f"-p 0 -n {value}"
     else:
         raise ValueError("mode must be 'pp' or 'tg'")
 
+    cmd = f"{shlex.quote(binary)} -m {shlex.quote(model)} {bench_args} {flags}"
     print("\n[RUN]", cmd)
-    stop_evt = Event()
-    peaks: Dict[str, int] = {}
 
-    monitors: List[Thread] = []
-    if monitor_gpu:
-        monitors.extend([
-            Thread(target=monitor_rocm_vram, args=(1.0, stop_evt, peaks), daemon=True),
-            Thread(target=monitor_gtt, args=(1.0, stop_evt, peaks), daemon=True),
-        ])
-    monitors.append(Thread(target=monitor_sysram, args=(1.0, stop_evt, peaks), daemon=True))
+    stop = Event()
+    peaks: Dict[str, int] = {}
+    monitors = [Thread(target=monitor_sysram, args=(stop, peaks), daemon=True)]
+    if gpu_mon:
+        monitors += [
+            Thread(target=monitor_rocm_vram, args=(stop, peaks), daemon=True),
+            Thread(target=monitor_gtt, args=(stop, peaks), daemon=True),
+        ]
     for t in monitors:
         t.start()
 
-    # Capture stdout
-    start_t = time.time()
-    proc = sp.Popen(shlex.split(cmd), stdout=sp.PIPE, stderr=sp.STDOUT, text=True, bufsize=1)
-    tokens_per_sec = 0.0
+    tok_s = 0.0
     ttft_ms = None
+    start = time.time()
+
+    proc = sp.Popen(shlex.split(cmd), stdout=sp.PIPE, stderr=sp.STDOUT, text=True, bufsize=1)
     try:
         for line in proc.stdout:
-            # Quickly parse JSONL lines produced by llama-bench for t/s etc.
+            sys.stdout.write(line)
             try:
                 rec = json.loads(line)
-                if "tok_per_s" in rec:
-                    tokens_per_sec = rec["tok_per_s"]
-                if "ttft_ms" in rec:
-                    ttft_ms = rec["ttft_ms"]
+                tok_s = rec.get("tok_per_s", tok_s)
+                ttft_ms = rec.get("ttft_ms", ttft_ms)
             except Exception:
-                pass  # non‑JSON log line
-            sys.stdout.write(line)  # stream through
+                pass
     finally:
         proc.wait()
-        runtime_s = time.time() - start_t
-        stop_evt.set()
+        stop.set()
         for t in monitors:
             t.join()
 
-    result = {
+    rec = {
         "timestamp": dt.datetime.now().astimezone().isoformat(),
         "binary": binary,
-        "flags": flags,
         "mode": mode,
         "value": value,
-        "tokens_per_sec": tokens_per_sec,
+        "tokens_per_sec": tok_s,
         "ttft_ms": ttft_ms,
-        "runtime_s": runtime_s,
+        "runtime_s": time.time() - start,
     }
-    result.update(peaks)
-    return result
+    rec.update(peaks)
+    return rec
 
 ###############################################################################
 # -------------------------- PLOTTING & TABLES ------------------------------ #
 ###############################################################################
 
 def plot_series(df: pd.DataFrame, build: str, mode: str, outdir: Path):
-    """Plot tokens/s and memory peak over value sweep for one build."""
-
+    sub = df[(df.build == build) & (df.mode == mode)].sort_values("value")
+    if sub.empty:
+        return
     fig, ax1 = plt.subplots(figsize=(8, 5))
-    subset = df[df["build"] == build]
-    subset = subset[subset["mode"] == mode].sort_values("value")
-
     ax1.set_title(f"{build} – {'PP' if mode=='pp' else 'TG'} sweep")
     ax1.set_xlabel("Token count")
     ax1.set_ylabel("tokens/s")
-    ax1.plot(subset["value"], subset["tokens_per_sec"], marker="o", label="tokens/s")
+    ax1.plot(sub.value, sub.tokens_per_sec, marker="o")
 
     ax2 = ax1.twinx()
-    ax2.set_ylabel("Peak VRAM (MiB)")
-    ax2.plot(subset["value"], subset["vram_peak_mib"], linestyle="--", marker="x", label="VRAM peak")
-    ax1.grid(True, which="both", alpha=0.3, linestyle=":")
+    ax2.set_ylabel("VRAM peak (MiB)")
+    ax2.plot(sub.value, sub.vram_peak_mib, linestyle="--", marker="x")
 
+    ax1.grid(True, alpha=0.3, linestyle=":")
     fig.tight_layout()
-    out_path = outdir / f"{build}_{mode}.png"
-    fig.savefig(out_path, dpi=150)
+    fig.savefig(outdir / f"{build}_{mode}.png", dpi=150)
     plt.close(fig)
-    print("Saved", out_path)
 
 
-def write_markdown_table(df: pd.DataFrame, model: str, outdir: Path):
-    pp_row = df[(df.mode == "pp") & (df.value == 512)].copy()
-    tg_row = df[(df.mode == "tg") & (df.value == 128)].copy()
-    core_cols = [
-        "build", "tokens_per_sec", "vram_peak_mib", "gtt_peak_mib", "system_ram_peak_mib", "ttft_ms"
-    ]
-    md = "### Summary @PP512 / TG128\n\n" + tabulate(pd.concat([pp_row, tg_row])[core_cols], headers="keys", tablefmt="github")
-    with open(outdir / f"summary_{model}.md", "w") as fh:
-        fh.write(md)
+def write_summary(df: pd.DataFrame, model: str, outdir: Path):
+    core_cols = ["build", "tokens_per_sec", "vram_peak_mib", "gtt_peak_mib", "system_ram_peak_mib", "ttft_ms"]
+    rows = []
+    for build in df.build.unique():
+        pp = df[(df.build == build) & (df.mode == "pp") & (df.value == 512)].iloc[0:1]
+        tg = df[(df.build == build) & (df.mode == "tg") & (df.value == 128)].iloc[0:1]
+        rows.extend([pp, tg])
+    md = tabulate(pd.concat(rows)[core_cols], headers="keys", tablefmt="github")
+    (outdir / f"summary_{model}.md").write_text(md)
 
 ###############################################################################
 # --------------------------------- MAIN ------------------------------------ #
 ###############################################################################
 
 def main():
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
-        description=textwrap.dedent(__doc__))
-    parser.add_argument("--model", required=True, help="Path to GGUF model")
-    parser.add_argument("--outdir", required=True, help="Directory to save results")
-    parser.add_argument("--builds", nargs="*", help="Space‑separated list of build names to test")
-    parser.add_argument("--flags", default=DEFAULT_FLAGS, help="Extra flags to pass to llama-bench")
-    parser.add_argument("--pp", nargs="*", type=int, help="Prompt token counts")
-    parser.add_argument("--tg", nargs="*", type=int, help="Generation token counts")
-    parser.add_argument("--skip_gpu_mon", action="store_true", help="Disable GPU memory monitors")
-    args = parser.parse_args()
+    p = argparse.ArgumentParser(description=textwrap.dedent(__doc__), formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--model", required=True, help="Path to GGUF model")
+    p.add_argument("--outdir", help="Directory for outputs (defaults to model stem)")
+    p.add_argument("--builds", nargs="*", help="Subset of build names or explicit binaries")
+    p.add_argument("--flags", default=DEFAULT_FLAGS, help="Extra flags passed verbatim to llama-bench")
+    p.add_argument("--pp", nargs="*", type=int, help="Prompt sizes to sweep")
+    p.add_argument("--tg", nargs="*", type=int, help="Generation sizes to sweep")
+    p.add_argument("--skip_gpu_mon", action="store_true", help="Disable GPU memory monitors")
+    args = p.parse_args()
+
+    outdir = Path(args.outdir) if args.outdir else Path(Path(args.model).stem)
+    outdir.mkdir(parents=True, exist_ok=True)
 
     builds = args.builds or list(DEFAULT_BUILDS.keys())
     pp_vals = args.pp or DEFAULT_PP_VALUES
     tg_vals = args.tg or DEFAULT_TG_VALUES
-    outdir = Path(args.outdir)
-    outdir.mkdir(parents=True, exist_ok=True)
 
     jsonl_path = outdir / "results.jsonl"
     with open(jsonl_path, "w") as jl:
         for build in builds:
-            binary = DEFAULT_BUILDS.get(build) or build  # allow passing explicit path
-            # commit id if git repo present
+            binary = DEFAULT_BUILDS.get(build, build)  # explicit path passes through
             commit = ""
-            repo_dir = Path(binary).parent.parent
-            head_path = repo_dir / ".git/HEAD"
-            if head_path.exists():
-                commit = sp.check_output(["git", "--git-dir", str(repo_dir/".git"), "rev-parse", "--short", "HEAD"], text=True).strip()
-            for mode, sweep in [("pp", pp_vals), ("tg", tg_vals)]:
+            repo = Path(binary).parent.parent
+            if (repo / ".git").exists():
+                try:
+                    commit = sp.check_output(["git", "--git-dir", str(repo / ".git"), "rev-parse", "--short", "HEAD"], text=True).strip()
+                except Exception:
+                    pass
+            for mode, sweep in (("pp", pp_vals), ("tg", tg_vals)):
                 for val in sweep:
-                    rec = run_single_bench(
-                        binary=binary,
-                        model=args.model,
-                        flags=args.flags,
-                        mode=mode,
-                        value=val,
-                        monitor_gpu=not args.skip_gpu_mon,
-                    )
+                    rec = run_bench(binary, args.model, args.flags, mode, val, not args.skip_gpu_mon)
                     rec.update({"build": build, "commit": commit})
                     jl.write(json.dumps(rec) + "\n")
                     jl.flush()
 
-    # ----------- analysis & plots ------------- #
     df = pd.read_json(jsonl_path, lines=True)
     for build in df.build.unique():
         for mode in ["pp", "tg"]:
             plot_series(df, build, mode, outdir)
-    write_markdown_table(df, Path(args.model).stem, outdir)
-
-    print("\nAll done! Results in", outdir)
+    write_summary(df, Path(args.model).stem, outdir)
+    print("\nFinished!  Artifacts in", outdir)
 
 
 if __name__ == "__main__":
