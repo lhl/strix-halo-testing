@@ -1,0 +1,20 @@
+Tester console logging started at 2025-06-16T18:51:48.220590Z
+
+1: Bus=0xC2:00 DevId=0x1586   78GB Radeon 8060S Graphics
+Tester worker logging started at 2025-06-16T18:51:48.247629Z
+Standard 5-minute test of 1: Bus=0xC2:00 DevId=0x1586   78GB Radeon 8060S Graphics
+      1 iteration. Passed  0.6741 seconds  written:   67.5GB 214.3GB/sec        checked:   71.2GB 198.4GB/sec
+      3 iteration. Passed  1.3281 seconds  written:  135.0GB 215.7GB/sec        checked:  142.5GB 202.9GB/sec
+     11 iteration. Passed  5.2839 seconds  written:  540.0GB 218.0GB/sec        checked:  570.0GB 203.1GB/sec
+     57 iteration. Passed 30.4883 seconds  written: 3105.0GB 217.2GB/sec        checked: 3277.5GB 202.4GB/sec
+    103 iteration. Passed 30.5062 seconds  written: 3105.0GB 217.3GB/sec        checked: 3277.5GB 202.1GB/sec
+    149 iteration. Passed 30.4545 seconds  written: 3105.0GB 217.5GB/sec        checked: 3277.5GB 202.6GB/sec
+    195 iteration. Passed 30.4264 seconds  written: 3105.0GB 217.5GB/sec        checked: 3277.5GB 202.9GB/sec
+    241 iteration. Passed 30.4179 seconds  written: 3105.0GB 217.8GB/sec        checked: 3277.5GB 202.8GB/sec
+    287 iteration. Passed 30.4606 seconds  written: 3105.0GB 217.3GB/sec        checked: 3277.5GB 202.7GB/sec
+    333 iteration. Passed 30.5100 seconds  written: 3105.0GB 216.9GB/sec        checked: 3277.5GB 202.4GB/sec
+    379 iteration. Passed 30.4767 seconds  written: 3105.0GB 217.0GB/sec        checked: 3277.5GB 202.7GB/sec
+    425 iteration. Passed 30.4775 seconds  written: 3105.0GB 217.2GB/sec        checked: 3277.5GB 202.6GB/sec
+Standard 5-minute test PASSed! Just press Ctrl+C unless you plan long test run.
+Extended endless test started; testing more than 2 hours is usually unneeded
+use Ctrl+C to stop it when you decide it's enough
