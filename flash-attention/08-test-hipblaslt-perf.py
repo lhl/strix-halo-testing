@@ -6,7 +6,7 @@ from triton.testing import do_bench
 
 # Set environment
 os.environ['PYTORCH_ROCM_ARCH'] = 'gfx1151'
-os.environ['HIPBLASLT_TENSILE_LIBPATH'] = '/opt/rocm/lib/hipblaslt/library'
+os.environ['HIPBLASLT_TENSILE_LIBPATH'] = '/home/lhl/therock/rocm-7.0/lib/hipblaslt/library'
 os.environ['TORCH_BLAS_PREFER_HIPBLASLT'] = '1'
 
 device = 'cuda'
