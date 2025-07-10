@@ -35,16 +35,31 @@ def run_cmd(cmd: str) -> str:
         return e.output.strip()
 
 
-def gather_system_info() -> Dict[str, str]:
-    """Collect basic system information."""
+def gather_system_info(executable: str) -> Dict[str, str]:
+    """Collect detailed system and software version information."""
     info = {
         "timestamp": datetime.utcnow().isoformat() + "Z",
         "hostname": platform.node(),
         "kernel": run_cmd("uname -r"),
         "os": platform.platform(),
         "cpu": run_cmd("lscpu | grep 'Model name' | awk -F: '{print $2}'"),
-        "rocm": run_cmd("rocminfo | grep -m1 'Runtime Version' || true"),
+        "rocm_version": run_cmd("rocminfo | grep -m1 'Runtime Version' | awk '{print $3}' || true"),
+        "hip_version": run_cmd("hipcc --version 2>/dev/null | head -n1 || true"),
+        "vulkan_version": run_cmd("vulkaninfo --summary 2>/dev/null | awk -F: '/Vulkan Instance Version/{print $2;exit}' || true"),
+        "amdgpu_driver": run_cmd("modinfo -F version amdgpu 2>/dev/null || true"),
+        "inxi": run_cmd("inxi -b 2>/dev/null || true"),
     }
+
+    # attempt to capture the llama.cpp commit used by the executable
+    try:
+        exe_path = Path(executable).resolve()
+        repo_root = exe_path.parents[2]
+        commit = run_cmd(f"git -C {repo_root} rev-parse HEAD 2>/dev/null || true")
+        if commit:
+            info["llama_cpp_commit"] = commit
+    except Exception:
+        pass
+
     gpu_name = run_cmd("rocm-smi --showproductname --json || true")
     if gpu_name:
         info["gpu"] = gpu_name
@@ -200,9 +215,10 @@ def main() -> None:
     out_dir = Path("bench_runs") / timestamp
     out_dir.mkdir(parents=True)
 
-    # store system info
-    sys_info = gather_system_info()
-    (out_dir / "system_info.json").write_text(json.dumps(sys_info, indent=2))
+    # store system and version info
+    exe_path = cfg.get("executable", "llama-bench")
+    sys_info = gather_system_info(exe_path)
+    (out_dir / "info.json").write_text(json.dumps(sys_info, indent=2))
 
     all_results: Dict[str, List[Dict]] = {}
 
