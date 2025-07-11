@@ -10,6 +10,7 @@ import argparse, datetime as dt, json, shlex, subprocess as sp, sys, textwrap, t
 from pathlib import Path
 from threading import Event, Thread
 from typing import Dict, List
+import os
 
 import matplotlib
 matplotlib.use('Agg')
@@ -53,7 +54,7 @@ def parse_meminfo(out:str)->int:
 
 # ------------------------------ BENCH RUN ------------------------------- #
 
-def run_bench(bin:str,model:str,flags:str,mode:str,val:int,gpu:bool,raw_sink,intv:float):
+def run_bench(bin:str,model:str,flags:str,mode:str,val:int,gpu:bool,raw_sink,intv:float,env:Dict[str,str]|None=None,extra:Dict|None=None):
     if val==0:return{}
     bench_args=f"-p {val} -n 0" if mode=='pp' else f"-p 0 -n {val}"
     cmd=f"{shlex.quote(bin)} -m {shlex.quote(model)} {bench_args} {flags} -o jsonl"
@@ -67,13 +68,13 @@ def run_bench(bin:str,model:str,flags:str,mode:str,val:int,gpu:bool,raw_sink,int
             t=Thread(target=_monitor,args=(c,p,f,stop,peaks,intv),daemon=True);t.start();ths.append(t)
 
     last=None
-    proc=sp.Popen(shlex.split(cmd),stdout=sp.PIPE,stderr=sp.STDOUT,text=True)
+    proc=sp.Popen(shlex.split(cmd),stdout=sp.PIPE,stderr=sp.STDOUT,text=True,env={**os.environ,**(env or {})})
     for line in proc.stdout:
         try:j=json.loads(line);last=j;raw_sink.write(line)
         except json.JSONDecodeError:sys.stdout.write(line)
     proc.wait();stop.set();[t.join() for t in ths]
     tps=last.get('avg_ts') if last else None
-    return {'timestamp':dt.datetime.now().isoformat(),'mode':mode,'value':val,'tokens_per_sec':tps,'bench_raw':last,**peaks}
+    return {'timestamp':dt.datetime.now().isoformat(),'mode':mode,'value':val,'tokens_per_sec':tps,'bench_raw':last,**peaks,**(extra or {})}
 
 # ----------------------------- PLOTTING ---------------------------------- #
 
@@ -92,7 +93,9 @@ def main():
     ap=argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter,description='llama.cpp benchmark helper')
     ap.add_argument('-m','--model',required=True);ap.add_argument('-o','--outdir')
     ap.add_argument('-b','--builds',nargs='*');ap.add_argument('--build-root',type=Path,default=Path('/home/lhl/llama.cpp'))
-    ap.add_argument('-p','--pp',nargs='*',type=int);ap.add_argument('-n','--tg',nargs='*',type=int);ap.add_argument('--flags',default='-fa 1')
+    ap.add_argument('-p','--pp',nargs='*',type=int);ap.add_argument('-n','--tg',nargs='*',type=int)
+    ap.add_argument('--flags',default='')
+    ap.add_argument('--moe',action='store_true')
     ap.add_argument('--skip-gpu-mon',action='store_true');ap.add_argument('--list-builds',action='store_true');ap.add_argument('--interval',type=float,default=.2)
     args=ap.parse_args()
 
@@ -104,18 +107,57 @@ def main():
     pp=args.pp or [2**i for i in range(14)];tg=args.tg or pp
 
     raw=(out/'raw_runs.jsonl').open('w');records=[]
+    base_flags=args.flags.strip()
     for b,bin in builds.items():
-        for mode,vals in (('pp',pp),('tg',tg)):
-            for v in vals:
-                rec=run_bench(bin,args.model,args.flags,mode,v,not args.skip_gpu_mon,raw,args.interval)
-                if rec:rec['build']=b;records.append(rec)
+        env_opts=[{}]
+        if b in ('hip','rocwmma'):
+            env_opts.append({'ROCBLAS_USE_HIPBLASLT':'1'})
+        b_opts=['']
+        if b=='vulkan' and args.moe:
+            b_opts.append('-b 256')
+        for env in env_opts:
+            for fa in ('','-fa 1'):
+                for bf in b_opts:
+                    flags=" ".join(f for f in (base_flags,fa,bf) if f).strip()
+                    info={'build':b,'fa':fa.strip(), 'b':bf.strip(), 'hipblaslt':env.get('ROCBLAS_USE_HIPBLASLT','')}
+                    for mode,vals in (('pp',pp),('tg',tg)):
+                        for v in vals:
+                            rec=run_bench(bin,args.model,flags,mode,v,not args.skip_gpu_mon,raw,args.interval,env,info)
+                            if rec:records.append(rec)
     raw.close()
     if not records:print('No data');return
 
-    df=pd.DataFrame(records);df.to_json(out/'results.jsonl',orient='records',lines=True)
+    df=pd.DataFrame(records)
+    df.to_json(out/'results.jsonl',orient='records',lines=True)
     for met,lbl in [('tokens_per_sec','tokens/s'),('vram_peak_mib','Peak VRAM (MiB)')]:
-        for mode in ('pp','tg'):comb_plot(df,met,lbl,mode,out)
-    tab=tabulate(df[['build','mode','value','tokens_per_sec','vram_peak_mib','vram_delta_mib','gtt_peak_mib','system_ram_peak_mib']],headers='keys',tablefmt='github');(out/'summary.md').write_text(tab)
+        for mode in ('pp','tg'):
+            comb_plot(df,met,lbl,mode,out)
+
+    rows=[]
+    for (b,fa,bf,hiplt),grp in df.groupby(['build','fa','b','hipblaslt']):
+        def _get(mode,val):
+            sub=grp[(grp['mode']==mode)&(grp['value']==val)]
+            return sub['tokens_per_sec'].iloc[0] if not sub.empty else None
+        pp512=_get('pp',512)
+        tg128=_get('tg',128)
+        mem=grp['vram_peak_mib'].max()
+        label=b+(' hipblaslt' if hiplt else '')
+        rows.append({'backend':label,'fa':fa,'b':bf,'pp512':pp512,'tg128':tg128,'mem':mem})
+
+    best_pp=max((r['pp512'] or 0 for r in rows),default=0)
+    best_tg=max((r['tg128'] or 0 for r in rows),default=0)
+    best_mem=min((r['mem'] for r in rows),default=0)
+
+    table=[]
+    for r in rows:
+        pp = f"**{r['pp512']}**" if r['pp512']==best_pp and r['pp512'] is not None else (r['pp512'] if r['pp512'] is not None else '-')
+        tg = f"**{r['tg128']}**" if r['tg128']==best_tg and r['tg128'] is not None else (r['tg128'] if r['tg128'] is not None else '-')
+        mem = f"**{r['mem']}**" if r['mem']==best_mem else r['mem']
+        table.append([r['backend'],r['fa'],r['b'],pp,tg,mem])
+
+    headers=['backend','-fa','-b','pp512','tg128','max_mem']
+    tab=tabulate(table,headers=headers,tablefmt='github')
+    (out/'summary.md').write_text(tab)
     print('Done – artifacts in',out)
 
 if __name__=='__main__':main()
