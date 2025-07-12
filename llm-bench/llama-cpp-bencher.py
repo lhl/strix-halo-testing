@@ -380,7 +380,9 @@ def main():
     base_flags=args.flags.strip()
     for b,bin in builds.items():
         env_opts=[{}]
-        if b in ('hip','rocwmma'):
+        # strip the optional "llama.cpp-" prefix so we match the logical backend
+        backend=b.split('-',1)[-1]
+        if backend in ('hip','rocwmma'):
             env_opts.append({'ROCBLAS_USE_HIPBLASLT':'1'})
         b_opts=['']
         if b=='vulkan' and args.moe:
