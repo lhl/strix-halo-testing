@@ -89,48 +89,20 @@ def comb_plot(df,metric,label,mode,out):
         ax.set_title(f"{label} – {mode.upper()} sweep");ax.set_xlabel('Tokens');ax.set_ylabel(label);ax.legend();ax.grid(True,alpha=.3,linestyle=':');fig.tight_layout();fig.savefig(out/f"{mode}_{metric}.png",dpi=150)
     plt.close(fig)
 
-# ------------------------------ MAIN ------------------------------------- #
+def sweep_table(df,mode):
+    vals=sorted(df[df['mode']==mode]['value'].unique())
+    headers=['backend','-fa','-b']+[str(v) for v in vals]
+    rows=[]
+    for (b,fa,bf,hiplt),grp in df.groupby(['build','fa','b','hipblaslt']):
+        label=b+(' hipblaslt' if hiplt else '')
+        row=[label,fa,bf]
+        for v in vals:
+            sub=grp[(grp['mode']==mode)&(grp['value']==v)]
+            row.append(sub['tokens_per_sec'].iloc[0] if not sub.empty else '-')
+        rows.append(row)
+    return tabulate(rows,headers=headers,tablefmt='github')
 
-def main():
-    ap=argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter,description='llama.cpp benchmark helper')
-    ap.add_argument('-m','--model',required=True);ap.add_argument('-o','--outdir')
-    ap.add_argument('-b','--builds',nargs='*');ap.add_argument('--build-root',type=Path,default=Path('/home/lhl/llama.cpp'))
-    ap.add_argument('-p','--pp',nargs='*',type=int);ap.add_argument('-n','--tg',nargs='*',type=int)
-    ap.add_argument('--flags',default='')
-    ap.add_argument('--moe',action='store_true')
-    ap.add_argument('--skip-gpu-mon',action='store_true');ap.add_argument('--list-builds',action='store_true');ap.add_argument('--interval',type=float,default=.2)
-    args=ap.parse_args()
-
-    found=discover_builds(args.build_root)
-    if args.list_builds:
-        print('\n'.join(f"{k}: {v}" for k,v in found.items()));return
-    sel=args.builds or list(found.keys());builds={n:found.get(n,n) for n in sel}
-    out=Path(args.outdir) if args.outdir else Path(Path(args.model).stem);out.mkdir(exist_ok=True)
-    pp=args.pp or [2**i for i in range(14)];tg=args.tg or pp
-
-    raw=(out/'raw_runs.jsonl').open('w');records=[]
-    base_flags=args.flags.strip()
-    for b,bin in builds.items():
-        env_opts=[{}]
-        if b in ('hip','rocwmma'):
-            env_opts.append({'ROCBLAS_USE_HIPBLASLT':'1'})
-        b_opts=['']
-        if b=='vulkan' and args.moe:
-            b_opts.append('-b 256')
-        for env in env_opts:
-            for fa in ('','-fa 1'):
-                for bf in b_opts:
-                    flags=" ".join(f for f in (base_flags,fa,bf) if f).strip()
-                    info={'build':b,'fa':fa.strip(), 'b':bf.strip(), 'hipblaslt':env.get('ROCBLAS_USE_HIPBLASLT','')}
-                    for mode,vals in (('pp',pp),('tg',tg)):
-                        for v in vals:
-                            rec=run_bench(bin,args.model,flags,mode,v,not args.skip_gpu_mon,raw,args.interval,env,info)
-                            if rec:records.append(rec)
-    raw.close()
-    if not records:print('No data');return
-
-    df=pd.DataFrame(records)
-    df.to_json(out/'results.jsonl',orient='records',lines=True)
+def write_summary(df,out):
     for met,lbl in [('tokens_per_sec','tokens/s'),('vram_peak_mib','Peak VRAM (MiB)')]:
         for mode in ('pp','tg'):
             comb_plot(df,met,lbl,mode,out)
@@ -158,8 +130,66 @@ def main():
         table.append([r['backend'],r['fa'],r['b'],pp,tg,mem])
 
     headers=['backend','-fa','-b','pp512','tg128','max_mem']
-    tab=tabulate(table,headers=headers,tablefmt='github')
-    (out/'summary.md').write_text(tab)
+    top_tab=tabulate(table,headers=headers,tablefmt='github')
+    pp_tab=sweep_table(df,'pp')
+    tg_tab=sweep_table(df,'tg')
+    md='\n\n'.join([top_tab,'\n### PP sweep\n',pp_tab,'\n### TG sweep\n',tg_tab])
+    (out/'summary.md').write_text(md)
+
+# ------------------------------ MAIN ------------------------------------- #
+
+def main():
+    ap=argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter,description='llama.cpp benchmark helper')
+    ap.add_argument('-m','--model',required=True);ap.add_argument('-o','--outdir')
+    ap.add_argument('-b','--builds',nargs='*');ap.add_argument('--build-root',type=Path,default=Path('/home/lhl/llama.cpp'))
+    ap.add_argument('-p','--pp',nargs='*',type=int);ap.add_argument('-n','--tg',nargs='*',type=int)
+    ap.add_argument('--flags',default='')
+    ap.add_argument('--moe',action='store_true')
+    ap.add_argument('--skip-gpu-mon',action='store_true');ap.add_argument('--list-builds',action='store_true');ap.add_argument('--interval',type=float,default=.2)
+    ap.add_argument('--resummarize',action='store_true',help='recompute summary from results.jsonl')
+    args=ap.parse_args()
+
+    found=discover_builds(args.build_root)
+    if args.list_builds:
+        print('\n'.join(f"{k}: {v}" for k,v in found.items()));return
+    sel=args.builds or list(found.keys());builds={n:found.get(n,n) for n in sel}
+    out=Path(args.outdir) if args.outdir else Path(Path(args.model).stem);out.mkdir(exist_ok=True)
+    pp=args.pp or [2**i for i in range(14)];tg=args.tg or pp
+
+    if args.resummarize:
+        res=out/'results.jsonl'
+        if not res.exists():
+            print('No results.jsonl in',out)
+            return
+        df=pd.read_json(res,orient='records',lines=True)
+        write_summary(df,out)
+        print('Summary updated from existing results')
+        return
+
+    raw=(out/'raw_runs.jsonl').open('w');records=[]
+    base_flags=args.flags.strip()
+    for b,bin in builds.items():
+        env_opts=[{}]
+        if b in ('hip','rocwmma'):
+            env_opts.append({'ROCBLAS_USE_HIPBLASLT':'1'})
+        b_opts=['']
+        if b=='vulkan' and args.moe:
+            b_opts.append('-b 256')
+        for env in env_opts:
+            for fa in ('','-fa 1'):
+                for bf in b_opts:
+                    flags=" ".join(f for f in (base_flags,fa,bf) if f).strip()
+                    info={'build':b,'fa':fa.strip(), 'b':bf.strip(), 'hipblaslt':env.get('ROCBLAS_USE_HIPBLASLT','')}
+                    for mode,vals in (('pp',pp),('tg',tg)):
+                        for v in vals:
+                            rec=run_bench(bin,args.model,flags,mode,v,not args.skip_gpu_mon,raw,args.interval,env,info)
+                            if rec:records.append(rec)
+    raw.close()
+    if not records:print('No data');return
+
+    df=pd.DataFrame(records)
+    df.to_json(out/'results.jsonl',orient='records',lines=True)
+    write_summary(df,out)
     print('Done – artifacts in',out)
 
 if __name__=='__main__':main()
