@@ -26,6 +26,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pandas as pd
 from tabulate import tabulate
+from loguru import logger
 
 # ----------------------------- SYSTEM INFO ------------------------------ #
 
@@ -203,7 +204,7 @@ def run_bench(bin:str,model:str,flags:str,mode:str,val:int,gpu:bool,raw_sink,int
         return {}
     bench_args=f"-p {val} -n 0" if mode=='pp' else f"-p 0 -n {val}"
     cmd=f"{shlex.quote(bin)} -m {shlex.quote(model)} {bench_args} {flags} -o jsonl"
-    print("\n[RUN]",cmd)
+    logger.info("[RUN] {}", cmd)
     run_start=dt.datetime.now(dt.timezone.utc)
     stop=Event();peaks={}
     ths=[Thread(target=_monitor,args=(['cat','/proc/meminfo'],parse_meminfo,'system_ram_peak_mib',stop,peaks,intv),daemon=True)]
@@ -219,8 +220,11 @@ def run_bench(bin:str,model:str,flags:str,mode:str,val:int,gpu:bool,raw_sink,int
     last=None
     proc=sp.Popen(shlex.split(cmd),stdout=sp.PIPE,stderr=sp.STDOUT,text=True,env={**os.environ,**(env or {})})
     for line in proc.stdout:
-        try:j=json.loads(line);last=j;raw_sink.write(line)
-        except json.JSONDecodeError:sys.stdout.write(line)
+        try:
+            j=json.loads(line);last=j;raw_sink.write(line)
+        except json.JSONDecodeError:
+            sys.stdout.write(line)
+            logger.debug(line.rstrip())
     proc.wait();run_end=dt.datetime.now(dt.timezone.utc)
     stop.set();[t.join() for t in ths]
     if sensors:
@@ -230,7 +234,7 @@ def run_bench(bin:str,model:str,flags:str,mode:str,val:int,gpu:bool,raw_sink,int
     msg=f"[DONE] {mode} {val} → {duration:.1f}s"
     if tps is not None:
         msg+=f", {tps:.2f} tok/s"
-    print(msg)
+    logger.info(msg)
     return {
         'start_time': run_start.isoformat().replace('+00:00','Z'),
         'end_time': run_end.isoformat().replace('+00:00','Z'),
@@ -334,9 +338,13 @@ def main():
 
     found=discover_builds(args.build_root)
     if args.list_builds:
-        print('\n'.join(f"{k}: {v}" for k,v in found.items()));return
+        logger.info('\n'.join(f"{k}: {v}" for k,v in found.items()))
+        return
     sel=args.builds or list(found.keys());builds={n:found.get(n,n) for n in sel}
     out=Path(args.outdir) if args.outdir else Path(Path(args.model).stem);out.mkdir(exist_ok=True)
+    logger.remove()
+    logger.add(sys.stderr, level="INFO")
+    logger.add(out/"run.log", level="DEBUG")
 
     # capture system information once per run
     any_bin=next(iter(builds.values())) if builds else None
@@ -351,11 +359,11 @@ def main():
     if args.resummarize:
         res=out/'results.jsonl'
         if not res.exists():
-            print('No results.jsonl in',out)
+            logger.warning('No results.jsonl in {}', out)
             return
         df=pd.read_json(res,orient='records',lines=True)
         write_summary(df,out)
-        print('Summary updated from existing results')
+        logger.info('Summary updated from existing results')
         return
 
     raw=(out/'raw_runs.jsonl').open('a');records=[]
@@ -379,13 +387,14 @@ def main():
                             if not args.rerun and not existing_df.empty:
                                 mask=(existing_df['build']==info['build'])&(existing_df['fa']==info['fa'])&(existing_df['b']==info['b'])&(existing_df['hipblaslt']==info['hipblaslt'])&(existing_df['mode']==mode)&(existing_df['value']==v)
                                 if mask.any():
-                                    print(f"[SKIP] {mode} {v} for build {b} (use --rerun to force)")
+                                    logger.info("[SKIP] {} {} for build {} (use --rerun to force)", mode, v, b)
                                     continue
                             rec=run_bench(bin,args.model,flags,mode,v,not args.skip_gpu_mon,raw,args.interval,env,info)
                             if rec:records.append(rec)
     raw.close()
     if not records and existing_df.empty:
-        print('No data');return
+        logger.warning('No data')
+        return
 
     new_df=pd.DataFrame(records)
     df=pd.concat([existing_df,new_df],ignore_index=True)
@@ -401,7 +410,7 @@ def main():
     }
     (out/'run_info.json').write_text(json.dumps(run_info,indent=2))
 
-    print('Done – artifacts in',out)
+    logger.success('Done – artifacts in {}', out)
 
 if __name__=='__main__':main()
 
