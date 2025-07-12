@@ -6,17 +6,67 @@
 """
 from __future__ import annotations
 
-import argparse, datetime as dt, json, shlex, subprocess as sp, sys, textwrap, time, re
+import argparse
+import datetime as dt
+import json
+import shlex
+import subprocess as sp
+import sys
+import textwrap
+import time
+import re
 from pathlib import Path
 from threading import Event, Thread
 from typing import Dict, List
 import os
+import platform
 
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pandas as pd
 from tabulate import tabulate
+
+# ----------------------------- SYSTEM INFO ------------------------------ #
+
+def run_cmd(cmd: str) -> str:
+    try:
+        return sp.check_output(cmd, shell=True, text=True).strip()
+    except sp.CalledProcessError as e:
+        return e.output.strip()
+
+
+def gather_system_info(executable: str) -> Dict[str, str]:
+    info = {
+        "timestamp": dt.datetime.utcnow().isoformat() + "Z",
+        "hostname": platform.node(),
+        "kernel": run_cmd("uname -r"),
+        "os": platform.platform(),
+        "cpu": run_cmd("lscpu | grep 'Model name' | awk -F: '{print $2}'"),
+        "rocm_version": run_cmd(
+            "rocminfo | grep -m1 'Runtime Version' | awk '{print $3}' || true"
+        ),
+        "hip_version": run_cmd("hipcc --version 2>/dev/null | head -n1 || true"),
+        "vulkan_version": run_cmd(
+            "vulkaninfo --summary 2>/dev/null | awk -F: '/Vulkan Instance Version/{print $2;exit}' || true"
+        ),
+        "amdgpu_driver": run_cmd("modinfo -F version amdgpu 2>/dev/null || true"),
+    }
+
+    try:
+        exe_path = Path(executable).resolve()
+        repo_root = exe_path.parents[2]
+        commit = run_cmd(f"git -C {repo_root} rev-parse HEAD 2>/dev/null || true")
+        if commit:
+            info["llama_cpp_commit"] = commit
+    except Exception:
+        pass
+
+    gpu_name = run_cmd("rocm-smi --showproductname --json || true")
+    if gpu_name:
+        info["gpu"] = gpu_name
+
+    return info
 
 # ---------------------------- BUILD DISCOVERY ---------------------------- #
 
@@ -57,10 +107,12 @@ def parse_meminfo(out:str)->int:
 # ------------------------------ BENCH RUN ------------------------------- #
 
 def run_bench(bin:str,model:str,flags:str,mode:str,val:int,gpu:bool,raw_sink,intv:float,env:Dict[str,str]|None=None,extra:Dict|None=None):
-    if val==0:return{}
+    if val==0:
+        return {}
     bench_args=f"-p {val} -n 0" if mode=='pp' else f"-p 0 -n {val}"
     cmd=f"{shlex.quote(bin)} -m {shlex.quote(model)} {bench_args} {flags} -o jsonl"
     print("\n[RUN]",cmd)
+    run_start=dt.datetime.utcnow()
     stop=Event();peaks={}
     ths=[Thread(target=_monitor,args=(['cat','/proc/meminfo'],parse_meminfo,'system_ram_peak_mib',stop,peaks,intv),daemon=True)]
     ths[0].start()
@@ -74,9 +126,20 @@ def run_bench(bin:str,model:str,flags:str,mode:str,val:int,gpu:bool,raw_sink,int
     for line in proc.stdout:
         try:j=json.loads(line);last=j;raw_sink.write(line)
         except json.JSONDecodeError:sys.stdout.write(line)
-    proc.wait();stop.set();[t.join() for t in ths]
+    proc.wait();run_end=dt.datetime.utcnow()
+    stop.set();[t.join() for t in ths]
     tps=last.get('avg_ts') if last else None
-    return {'timestamp':dt.datetime.now().isoformat(),'mode':mode,'value':val,'tokens_per_sec':tps,'bench_raw':last,**peaks,**(extra or {})}
+    return {
+        'start_time': run_start.isoformat() + 'Z',
+        'end_time': run_end.isoformat() + 'Z',
+        'duration_s': (run_end - run_start).total_seconds(),
+        'mode': mode,
+        'value': val,
+        'tokens_per_sec': tps,
+        'bench_raw': last,
+        **peaks,
+        **(extra or {}),
+    }
 
 # ----------------------------- PLOTTING ---------------------------------- #
 
@@ -167,6 +230,15 @@ def main():
         print('\n'.join(f"{k}: {v}" for k,v in found.items()));return
     sel=args.builds or list(found.keys());builds={n:found.get(n,n) for n in sel}
     out=Path(args.outdir) if args.outdir else Path(Path(args.model).stem);out.mkdir(exist_ok=True)
+
+    # capture system information once per run
+    any_bin=next(iter(builds.values())) if builds else None
+    if any_bin:
+        sys_info=gather_system_info(any_bin)
+        (out/'system_info.json').write_text(json.dumps(sys_info,indent=2))
+
+    run_start=dt.datetime.utcnow()
+
     pp=args.pp or [2**i for i in range(14)];tg=args.tg or pp
 
     if args.resummarize:
@@ -203,6 +275,15 @@ def main():
     df=pd.DataFrame(records)
     df.to_json(out/'results.jsonl',orient='records',lines=True)
     write_summary(df,out)
+
+    run_end=dt.datetime.utcnow()
+    run_info={
+        'start_time': run_start.isoformat() + 'Z',
+        'end_time': run_end.isoformat() + 'Z',
+        'duration_s': (run_end - run_start).total_seconds(),
+    }
+    (out/'run_info.json').write_text(json.dumps(run_info,indent=2))
+
     print('Done – artifacts in',out)
 
 if __name__=='__main__':main()

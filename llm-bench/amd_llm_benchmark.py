@@ -214,6 +214,7 @@ def main() -> None:
     timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
     out_dir = Path("bench_runs") / timestamp
     out_dir.mkdir(parents=True)
+    run_start = datetime.utcnow()
 
     # store system and version info
     exe_path = cfg.get("executable", "llama-bench")
@@ -258,10 +259,19 @@ def main() -> None:
         md_lines.append(f"| {name} | {pp_ts} | {tg_ts} | - |")
     (out_dir / "summary.md").write_text("\n".join(md_lines))
 
+    run_end = datetime.utcnow()
+    run_info = {
+        "start_time": run_start.isoformat() + "Z",
+        "end_time": run_end.isoformat() + "Z",
+        "duration_s": (run_end - run_start).total_seconds(),
+    }
+    (out_dir / "run_info.json").write_text(json.dumps(run_info, indent=2))
+
 
 def run_single(cmd: List[str], run_dir: Path) -> List[Dict]:
     """Run benchmark with watchers."""
     print(f"Running: {' '.join(cmd)}")
+    start = datetime.utcnow()
     # watchers
     sys_mem = MetricWatcher("system_mem", "free --mebi | awk '/^Mem:/ {print $3}'")
     vram = MetricWatcher(
@@ -276,6 +286,7 @@ def run_single(cmd: List[str], run_dir: Path) -> List[Dict]:
         w.start()
 
     results = run_benchmark(cmd, run_dir)
+    end = datetime.utcnow()
 
     for w in (sys_mem, vram, gtt, sensors):
         w.stop()
@@ -290,6 +301,9 @@ def run_single(cmd: List[str], run_dir: Path) -> List[Dict]:
         "gtt_peak": gtt.max_value,
         "max_temp_c": sensors.max_temp,
         "max_power_w": sensors.max_power,
+        "start_time": start.isoformat() + "Z",
+        "end_time": end.isoformat() + "Z",
+        "duration_s": (end - start).total_seconds(),
     }
     (run_dir / "metrics.json").write_text(json.dumps(metrics, indent=2))
 
