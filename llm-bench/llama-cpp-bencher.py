@@ -98,9 +98,24 @@ def sweep_table(df,mode):
         row=[label,fa,bf]
         for v in vals:
             sub=grp[(grp['mode']==mode)&(grp['value']==v)]
-            row.append(sub['tokens_per_sec'].iloc[0] if not sub.empty else '-')
+            row.append(sub['tokens_per_sec'].iloc[0] if not sub.empty else None)
         rows.append(row)
-    return tabulate(rows,headers=headers,tablefmt='github')
+
+    # determine the best value for each concurrency column
+    best={v:max((r[i+3] or 0 for r in rows),default=0) for i,v in enumerate(vals)}
+
+    table=[]
+    for row in rows:
+        formatted=row[:3]
+        for i,v in enumerate(vals):
+            val=row[i+3]
+            if val is None:
+                formatted.append('-')
+            else:
+                formatted.append(f"**{val}**" if val==best[v] else val)
+        table.append(formatted)
+
+    return tabulate(table,headers=headers,tablefmt='github')
 
 def write_summary(df,out):
     for met,lbl in [('tokens_per_sec','tokens/s'),('vram_peak_mib','Peak VRAM (MiB)')]:
