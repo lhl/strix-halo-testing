@@ -17,7 +17,7 @@ import time
 import re
 from pathlib import Path
 from threading import Event, Thread
-from typing import Dict, List
+from typing import Dict, List, Optional
 import os
 import platform
 
@@ -51,6 +51,7 @@ def gather_system_info(executable: str) -> Dict[str, str]:
             "vulkaninfo --summary 2>/dev/null | awk -F: '/Vulkan Instance Version/{print $2;exit}' || true"
         ),
         "amdgpu_driver": run_cmd("modinfo -F version amdgpu 2>/dev/null || true"),
+        "inxi": run_cmd("inxi -b 2>/dev/null || true"),
     }
 
     try:
@@ -65,6 +66,43 @@ def gather_system_info(executable: str) -> Dict[str, str]:
     gpu_name = run_cmd("rocm-smi --showproductname --json || true")
     if gpu_name:
         info["gpu"] = gpu_name
+
+    amd_top = run_cmd("amdgpu_top -d 2>/dev/null || true")
+    if amd_top:
+        import re
+
+        def search(pattern: str) -> Optional[str]:
+            m = re.search(pattern, amd_top)
+            return m.group(1).strip() if m else None
+
+        gpu_details = {
+            "device_name": search(r"device_name:\s*\"([^\"]+)\""),
+            "device_type": search(r"device_type:\s*([A-Za-z0-9_]+)"),
+            "gpu_type": search(r"GPU Type\s*:\s*([^\n]+)"),
+            "family": search(r"Family\s*:\s*([^\n]+)"),
+            "asic_name": search(r"ASIC Name\s*:\s*([^\n]+)"),
+            "chip_class": search(r"Chip Class\s*:\s*([^\n]+)"),
+        }
+
+        vbios_block = re.search(r"VBIOS info:\n(.*?)(?:\n\s*\n|$)", amd_top, re.S)
+        if vbios_block:
+            vbios = {}
+            for line in vbios_block.group(1).splitlines():
+                parts = [p.strip(" []") for p in line.split(":", 1)]
+                if len(parts) == 2:
+                    vbios[parts[0]] = parts[1]
+            gpu_details["vbios"] = vbios
+
+        fw_block = re.search(r"Firmware info:\n(.*?)(?:\n\s*\n|$)", amd_top, re.S)
+        if fw_block:
+            fw_info = {}
+            for line in fw_block.group(1).splitlines():
+                m = re.match(r"\s*(\S+)\s+feature:\s*(\d+),\s+ver:\s*(\S+)", line)
+                if m:
+                    fw_info[m.group(1)] = {"feature": int(m.group(2)), "ver": m.group(3)}
+            gpu_details["firmware"] = fw_info
+
+        info["gpu_details"] = gpu_details
 
     return info
 
@@ -104,6 +142,60 @@ def parse_meminfo(out:str)->int:
         elif l.startswith('MemAvailable'):avail=_first_int(l)
     return (tot-avail)//1024
 
+# ----------------------------- SENSOR WATCHER --------------------------- #
+
+class SensorWatcher(Thread):
+    """Monitor edge temperature and power via the ``sensors`` command."""
+
+    def __init__(self, interval: float = 1.0) -> None:
+        super().__init__(daemon=True)
+        self.interval = interval
+        self.max_temp: Optional[float] = None
+        self.max_power: Optional[float] = None
+        self._power_samples: List[float] = []
+        self._stop = Event()
+
+    def _poll(self) -> None:
+        out = run_cmd("sensors")
+        for line in out.splitlines():
+            if "edge:" in line:
+                try:
+                    val = float(line.split()[1].strip("+°C"))
+                    if self.max_temp is None or val > self.max_temp:
+                        self.max_temp = val
+                except ValueError:
+                    pass
+            if "PPT:" in line:
+                try:
+                    val = float(line.split()[1])
+                    if self.max_power is None or val > self.max_power:
+                        self.max_power = val
+                    self._power_samples.append(val)
+                except ValueError:
+                    pass
+
+    def run(self) -> None:
+        while not self._stop.is_set():
+            self._poll()
+            time.sleep(self.interval)
+
+    def stop(self) -> None:
+        self._stop.set()
+
+    def avg_power(self) -> Optional[float]:
+        if not self._power_samples:
+            return None
+        return sum(self._power_samples) / len(self._power_samples)
+
+    def median_power(self) -> Optional[float]:
+        if not self._power_samples:
+            return None
+        s = sorted(self._power_samples)
+        mid = len(s) // 2
+        if len(s) % 2 == 0:
+            return (s[mid - 1] + s[mid]) / 2
+        return s[mid]
+
 # ------------------------------ BENCH RUN ------------------------------- #
 
 def run_bench(bin:str,model:str,flags:str,mode:str,val:int,gpu:bool,raw_sink,intv:float,env:Dict[str,str]|None=None,extra:Dict|None=None):
@@ -116,10 +208,13 @@ def run_bench(bin:str,model:str,flags:str,mode:str,val:int,gpu:bool,raw_sink,int
     stop=Event();peaks={}
     ths=[Thread(target=_monitor,args=(['cat','/proc/meminfo'],parse_meminfo,'system_ram_peak_mib',stop,peaks,intv),daemon=True)]
     ths[0].start()
+    sensors = None
     if gpu:
         for c,p,f in ([['rocm-smi','--showmeminfo','vram','--csv'],parse_rocm,'vram_peak_mib'],
                       [['amdgpu_top','-d'],parse_gtt,'gtt_peak_mib']):
             t=Thread(target=_monitor,args=(c,p,f,stop,peaks,intv),daemon=True);t.start();ths.append(t)
+        sensors = SensorWatcher(intv)
+        sensors.start()
 
     last=None
     proc=sp.Popen(shlex.split(cmd),stdout=sp.PIPE,stderr=sp.STDOUT,text=True,env={**os.environ,**(env or {})})
@@ -128,6 +223,8 @@ def run_bench(bin:str,model:str,flags:str,mode:str,val:int,gpu:bool,raw_sink,int
         except json.JSONDecodeError:sys.stdout.write(line)
     proc.wait();run_end=dt.datetime.now(dt.timezone.utc)
     stop.set();[t.join() for t in ths]
+    if sensors:
+        sensors.stop();sensors.join()
     duration=(run_end - run_start).total_seconds()
     tps=last.get('avg_ts') if last else None
     msg=f"[DONE] {mode} {val} → {duration:.1f}s"
@@ -143,6 +240,10 @@ def run_bench(bin:str,model:str,flags:str,mode:str,val:int,gpu:bool,raw_sink,int
         'tokens_per_sec': tps,
         'bench_raw': last,
         **peaks,
+        **({'max_temp_c': sensors.max_temp,
+            'max_power_w': sensors.max_power,
+            'avg_power_w': sensors.avg_power(),
+            'median_power_w': sensors.median_power()} if sensors else {}),
         **(extra or {}),
     }
 
