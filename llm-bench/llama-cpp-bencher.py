@@ -154,7 +154,7 @@ class SensorWatcher(Thread):
         self.max_temp: Optional[float] = None
         self.max_power: Optional[float] = None
         self._power_samples: List[float] = []
-        self._stop = Event()
+        self._stop_evt = Event()
 
     def _poll(self) -> None:
         out = run_cmd("sensors")
@@ -176,12 +176,12 @@ class SensorWatcher(Thread):
                     pass
 
     def run(self) -> None:
-        while not self._stop.is_set():
+        while not self._stop_evt.is_set():
             self._poll()
             time.sleep(self.interval)
 
     def stop(self) -> None:
-        self._stop.set()
+        self._stop_evt.set()
 
     def avg_power(self) -> Optional[float]:
         if not self._power_samples:
