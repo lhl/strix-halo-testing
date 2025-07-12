@@ -91,24 +91,23 @@ def comb_plot(df,metric,label,mode,out):
 
 def sweep_table(df,mode):
     vals=sorted(df[df['mode']==mode]['value'].unique())
-    headers=['backend','-fa','-b']+[str(v) for v in vals]
+    headers=['backend','hipblaslt','-fa','-b']+[str(v) for v in vals]
     rows=[]
     for (b,fa,bf,hiplt),grp in df.groupby(['build','fa','b','hipblaslt']):
-        label=b+(' hipblaslt' if hiplt else '')
-        row=[label,fa,bf]
+        row=[b,str(hiplt),fa,bf]
         for v in vals:
             sub=grp[(grp['mode']==mode)&(grp['value']==v)]
             row.append(sub['tokens_per_sec'].iloc[0] if not sub.empty else None)
         rows.append(row)
 
     # determine the best value for each concurrency column
-    best={v:max((r[i+3] or 0 for r in rows),default=0) for i,v in enumerate(vals)}
+    best={v:max((r[i+4] or 0 for r in rows),default=0) for i,v in enumerate(vals)}
 
     table=[]
     for row in rows:
-        formatted=row[:3]
+        formatted=row[:4]
         for i,v in enumerate(vals):
-            val=row[i+3]
+            val=row[i+4]
             if val is None:
                 formatted.append('-')
             else:
@@ -130,8 +129,7 @@ def write_summary(df,out):
         pp512=_get('pp',512)
         tg128=_get('tg',128)
         mem=(grp['vram_peak_mib'] + grp['gtt_peak_mib']).max()
-        label=b+(' hipblaslt' if hiplt else '')
-        rows.append({'backend':label,'fa':fa,'b':bf,'pp512':pp512,'tg128':tg128,'mem':mem})
+        rows.append({'backend':b,'hipblaslt':hiplt,'fa':fa,'b':bf,'pp512':pp512,'tg128':tg128,'mem':mem})
 
     best_pp=max((r['pp512'] or 0 for r in rows),default=0)
     best_tg=max((r['tg128'] or 0 for r in rows),default=0)
@@ -142,9 +140,9 @@ def write_summary(df,out):
         pp = f"**{r['pp512']}**" if r['pp512']==best_pp and r['pp512'] is not None else (r['pp512'] if r['pp512'] is not None else '-')
         tg = f"**{r['tg128']}**" if r['tg128']==best_tg and r['tg128'] is not None else (r['tg128'] if r['tg128'] is not None else '-')
         mem = f"**{r['mem']}**" if r['mem']==best_mem else r['mem']
-        table.append([r['backend'],r['fa'],r['b'],pp,tg,mem])
+        table.append([r['backend'],r.get('hipblaslt',''),r['fa'],r['b'],pp,tg,mem])
 
-    headers=['backend','-fa','-b','pp512','tg128','max_mem']
+    headers=['backend','hipblaslt','-fa','-b','pp512','tg128','max_mem']
     top_tab=tabulate(table,headers=headers,tablefmt='github')
     pp_tab=sweep_table(df,'pp')
     tg_tab=sweep_table(df,'tg')
