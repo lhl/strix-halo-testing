@@ -204,7 +204,15 @@ def run_bench(bin:str,model:str,flags:str,mode:str,val:int,gpu:bool,raw_sink,int
         return {}
     bench_args=f"-p {val} -n 0" if mode=='pp' else f"-p 0 -n {val}"
     cmd=f"{shlex.quote(bin)} -m {shlex.quote(model)} {bench_args} {flags} -o jsonl"
-    logger.info("[RUN] {}", cmd)
+    opt_parts=[]
+    if extra:
+        opt_parts.append(" ".join(f"{k}={v}" for k,v in extra.items() if v))
+    if env:
+        opt_parts.append("env:"+" ".join(f"{k}={v}" for k,v in env.items()))
+    if flags.strip():
+        opt_parts.append(f"flags:{flags.strip()}")
+    opt_str=" ".join(opt_parts)
+    logger.info("[RUN] {} {}", cmd, opt_str)
     run_start=dt.datetime.now(dt.timezone.utc)
     stop=Event();peaks={}
     ths=[Thread(target=_monitor,args=(['cat','/proc/meminfo'],parse_meminfo,'system_ram_peak_mib',stop,peaks,intv),daemon=True)]
