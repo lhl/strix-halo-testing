@@ -38,7 +38,7 @@ def run_cmd(cmd: str) -> str:
 
 def gather_system_info(executable: str) -> Dict[str, str]:
     info = {
-        "timestamp": dt.datetime.utcnow().isoformat() + "Z",
+        "timestamp": dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00", "Z"),
         "hostname": platform.node(),
         "kernel": run_cmd("uname -r"),
         "os": platform.platform(),
@@ -112,7 +112,7 @@ def run_bench(bin:str,model:str,flags:str,mode:str,val:int,gpu:bool,raw_sink,int
     bench_args=f"-p {val} -n 0" if mode=='pp' else f"-p 0 -n {val}"
     cmd=f"{shlex.quote(bin)} -m {shlex.quote(model)} {bench_args} {flags} -o jsonl"
     print("\n[RUN]",cmd)
-    run_start=dt.datetime.utcnow()
+    run_start=dt.datetime.now(dt.timezone.utc)
     stop=Event();peaks={}
     ths=[Thread(target=_monitor,args=(['cat','/proc/meminfo'],parse_meminfo,'system_ram_peak_mib',stop,peaks,intv),daemon=True)]
     ths[0].start()
@@ -126,12 +126,17 @@ def run_bench(bin:str,model:str,flags:str,mode:str,val:int,gpu:bool,raw_sink,int
     for line in proc.stdout:
         try:j=json.loads(line);last=j;raw_sink.write(line)
         except json.JSONDecodeError:sys.stdout.write(line)
-    proc.wait();run_end=dt.datetime.utcnow()
+    proc.wait();run_end=dt.datetime.now(dt.timezone.utc)
     stop.set();[t.join() for t in ths]
+    duration=(run_end - run_start).total_seconds()
     tps=last.get('avg_ts') if last else None
+    msg=f"[DONE] {mode} {val} → {duration:.1f}s"
+    if tps is not None:
+        msg+=f", {tps:.2f} tok/s"
+    print(msg)
     return {
-        'start_time': run_start.isoformat() + 'Z',
-        'end_time': run_end.isoformat() + 'Z',
+        'start_time': run_start.isoformat().replace('+00:00','Z'),
+        'end_time': run_end.isoformat().replace('+00:00','Z'),
         'duration_s': (run_end - run_start).total_seconds(),
         'mode': mode,
         'value': val,
@@ -223,6 +228,7 @@ def main():
     ap.add_argument('--moe',action='store_true')
     ap.add_argument('--skip-gpu-mon',action='store_true');ap.add_argument('--list-builds',action='store_true');ap.add_argument('--interval',type=float,default=.2)
     ap.add_argument('--resummarize',action='store_true',help='recompute summary from results.jsonl')
+    ap.add_argument('--rerun',action='store_true',help='force sweep rerun even if results exist')
     args=ap.parse_args()
 
     found=discover_builds(args.build_root)
@@ -237,7 +243,7 @@ def main():
         sys_info=gather_system_info(any_bin)
         (out/'system_info.json').write_text(json.dumps(sys_info,indent=2))
 
-    run_start=dt.datetime.utcnow()
+    run_start=dt.datetime.now(dt.timezone.utc)
 
     pp=args.pp or [2**i for i in range(14)];tg=args.tg or pp
 
@@ -251,7 +257,9 @@ def main():
         print('Summary updated from existing results')
         return
 
-    raw=(out/'raw_runs.jsonl').open('w');records=[]
+    raw=(out/'raw_runs.jsonl').open('a');records=[]
+    res_file=out/'results.jsonl'
+    existing_df=pd.read_json(res_file,orient='records',lines=True) if res_file.exists() else pd.DataFrame()
     base_flags=args.flags.strip()
     for b,bin in builds.items():
         env_opts=[{}]
@@ -267,19 +275,27 @@ def main():
                     info={'build':b,'fa':fa.strip(), 'b':bf.strip(), 'hipblaslt':env.get('ROCBLAS_USE_HIPBLASLT','')}
                     for mode,vals in (('pp',pp),('tg',tg)):
                         for v in vals:
+                            if not args.rerun and not existing_df.empty:
+                                mask=(existing_df['build']==info['build'])&(existing_df['fa']==info['fa'])&(existing_df['b']==info['b'])&(existing_df['hipblaslt']==info['hipblaslt'])&(existing_df['mode']==mode)&(existing_df['value']==v)
+                                if mask.any():
+                                    print(f"[SKIP] {mode} {v} for build {b} (use --rerun to force)")
+                                    continue
                             rec=run_bench(bin,args.model,flags,mode,v,not args.skip_gpu_mon,raw,args.interval,env,info)
                             if rec:records.append(rec)
     raw.close()
-    if not records:print('No data');return
+    if not records and existing_df.empty:
+        print('No data');return
 
-    df=pd.DataFrame(records)
+    new_df=pd.DataFrame(records)
+    df=pd.concat([existing_df,new_df],ignore_index=True)
     df.to_json(out/'results.jsonl',orient='records',lines=True)
-    write_summary(df,out)
+    if not new_df.empty:
+        write_summary(df,out)
 
-    run_end=dt.datetime.utcnow()
+    run_end=dt.datetime.now(dt.timezone.utc)
     run_info={
-        'start_time': run_start.isoformat() + 'Z',
-        'end_time': run_end.isoformat() + 'Z',
+        'start_time': run_start.isoformat().replace('+00:00','Z'),
+        'end_time': run_end.isoformat().replace('+00:00','Z'),
         'duration_s': (run_end - run_start).total_seconds(),
     }
     (out/'run_info.json').write_text(json.dumps(run_info,indent=2))
