@@ -36,7 +36,9 @@ def _monitor(cmd:List[str],parse,field:str,stop:Event,peaks:Dict[str,int],intv:f
         try:cur=parse(sp.check_output(cmd,text=True));peak=max(peak,cur)
         except Exception:pass
         time.sleep(intv)
-    peaks[field]=peak;peaks[field.replace('_peak_','_delta_')]=peak-init
+    peaks[field]=peak
+    peaks[field.replace('_peak_','_delta_')]=peak-init
+    peaks[field.replace('_peak_','_start_')]=init
 
 def parse_rocm(out:str)->int:
     try:return int(out.splitlines()[1].split(',')[2])//(1024*1024)
@@ -140,7 +142,7 @@ def main():
             return sub['tokens_per_sec'].iloc[0] if not sub.empty else None
         pp512=_get('pp',512)
         tg128=_get('tg',128)
-        mem=grp['vram_peak_mib'].max()
+        mem=(grp['vram_peak_mib'] + grp['gtt_peak_mib']).max()
         label=b+(' hipblaslt' if hiplt else '')
         rows.append({'backend':label,'fa':fa,'b':bf,'pp512':pp512,'tg128':tg128,'mem':mem})
 
