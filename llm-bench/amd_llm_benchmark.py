@@ -63,6 +63,46 @@ def gather_system_info(executable: str) -> Dict[str, str]:
     gpu_name = run_cmd("rocm-smi --showproductname --json || true")
     if gpu_name:
         info["gpu"] = gpu_name
+
+    # collect additional GPU details from amdgpu_top if available
+    amd_top = run_cmd("amdgpu_top -d 2>/dev/null || true")
+    if amd_top:
+        import re
+
+        def search(pattern: str) -> Optional[str]:
+            m = re.search(pattern, amd_top)
+            return m.group(1).strip() if m else None
+
+        gpu_details = {
+            "device_name": search(r"device_name:\s*\"([^\"]+)\""),
+            "device_type": search(r"device_type:\s*([A-Za-z0-9_]+)"),
+            "gpu_type": search(r"GPU Type\s*:\s*([^\n]+)"),
+            "family": search(r"Family\s*:\s*([^\n]+)"),
+            "asic_name": search(r"ASIC Name\s*:\s*([^\n]+)"),
+            "chip_class": search(r"Chip Class\s*:\s*([^\n]+)"),
+        }
+
+        # parse VBIOS info block
+        vbios_block = re.search(r"VBIOS info:\n(.*?)(?:\n\s*\n|$)", amd_top, re.S)
+        if vbios_block:
+            vbios = {}
+            for line in vbios_block.group(1).splitlines():
+                parts = [p.strip(" []") for p in line.split(":", 1)]
+                if len(parts) == 2:
+                    vbios[parts[0]] = parts[1]
+            gpu_details["vbios"] = vbios
+
+        # parse Firmware info block
+        fw_block = re.search(r"Firmware info:\n(.*?)(?:\n\s*\n|$)", amd_top, re.S)
+        if fw_block:
+            fw_info = {}
+            for line in fw_block.group(1).splitlines():
+                m = re.match(r"\s*(\S+)\s+feature:\s*(\d+),\s+ver:\s*(\S+)", line)
+                if m:
+                    fw_info[m.group(1)] = {"feature": int(m.group(2)), "ver": m.group(3)}
+            gpu_details["firmware"] = fw_info
+
+        info["gpu_details"] = gpu_details
     return info
 
 
@@ -107,6 +147,7 @@ class SensorWatcher(threading.Thread):
         self.interval = interval
         self.max_temp: Optional[float] = None
         self.max_power: Optional[float] = None
+        self._power_samples: List[float] = []
         self._stop = threading.Event()
 
     def _poll(self) -> None:
@@ -124,6 +165,7 @@ class SensorWatcher(threading.Thread):
                     val = float(line.split()[1])
                     if self.max_power is None or val > self.max_power:
                         self.max_power = val
+                    self._power_samples.append(val)
                 except ValueError:
                     pass
 
@@ -134,6 +176,20 @@ class SensorWatcher(threading.Thread):
 
     def stop(self) -> None:
         self._stop.set()
+
+    def avg_power(self) -> Optional[float]:
+        if not self._power_samples:
+            return None
+        return sum(self._power_samples) / len(self._power_samples)
+
+    def median_power(self) -> Optional[float]:
+        if not self._power_samples:
+            return None
+        s = sorted(self._power_samples)
+        mid = len(s) // 2
+        if len(s) % 2 == 0:
+            return (s[mid - 1] + s[mid]) / 2
+        return s[mid]
 
 
 # ----------------------------------------------------------------------------
@@ -301,6 +357,8 @@ def run_single(cmd: List[str], run_dir: Path) -> List[Dict]:
         "gtt_peak": gtt.max_value,
         "max_temp_c": sensors.max_temp,
         "max_power_w": sensors.max_power,
+        "avg_power_w": sensors.avg_power(),
+        "median_power_w": sensors.median_power(),
         "start_time": start.isoformat() + "Z",
         "end_time": end.isoformat() + "Z",
         "duration_s": (end - start).total_seconds(),
