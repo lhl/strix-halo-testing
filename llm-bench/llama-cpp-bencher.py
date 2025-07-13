@@ -28,6 +28,26 @@ import pandas as pd
 from tabulate import tabulate
 from loguru import logger
 
+# --------------------------- PLOT STYLE CONFIG --------------------------- #
+
+BACKEND_COLORS = {
+    "hip": "tab:blue",
+    "rocwmma": "tab:orange",
+    "vulkan": "tab:green",
+}
+
+# style mapping for flag combinations: (fa, hipblaslt, b_present)
+FLAG_LINESTYLES = {
+    (False, False, False): "-",
+    (True, False, False): "--",
+    (False, True, False): ":",
+    (True, True, False): "-.",
+    (False, False, True): (0, (5, 2)),
+    (True, False, True): (0, (3, 1, 1, 1)),
+    (False, True, True): (0, (1, 1)),
+    (True, True, True): (0, (5, 1, 1, 1, 1, 1)),
+}
+
 # ----------------------------- SYSTEM INFO ------------------------------ #
 
 def run_cmd(cmd: str) -> str:
@@ -261,13 +281,40 @@ def run_bench(bin:str,model:str,flags:str,mode:str,val:int,gpu:bool,raw_sink,int
 
 # ----------------------------- PLOTTING ---------------------------------- #
 
-def comb_plot(df,metric,label,mode,out):
-    fig,ax=plt.subplots(figsize=(8,5))
-    subset=df[df['mode']==mode]
-    for build,grp in subset.groupby('build'):
-        ax.plot(grp['value'],grp[metric],marker='o',label=build)
+def _format_b_flag(b: str) -> str:
+    if b.startswith("-b "):
+        return "b=" + b.split()[1]
+    return b
+
+
+def _make_label(build: str, fa: str, b: str, hiplt: str) -> str:
+    backend = build.split("-", 1)[-1].upper()
+    parts = []
+    if hiplt:
+        parts.append("hipBLASLt")
+    if fa:
+        parts.append("fa=1")
+    if b:
+        parts.append(_format_b_flag(b))
+    return f"{backend} {' '.join(parts)}".strip()
+
+
+def comb_plot(df, metric, label, mode, out):
+    fig, ax = plt.subplots(figsize=(8, 5))
+    subset = df[df["mode"] == mode]
+    for (build, fa, b, hiplt), grp in subset.groupby(["build", "fa", "b", "hipblaslt"]):
+        backend = build.split("-", 1)[-1]
+        color = BACKEND_COLORS.get(backend, "tab:gray")
+        ls = FLAG_LINESTYLES.get((bool(fa), bool(hiplt), bool(b)), "-")
+        ax.plot(grp["value"], grp[metric], marker="o", label=_make_label(build, fa, b, hiplt), color=color, linestyle=ls)
     if ax.lines:
-        ax.set_title(f"{label} – {mode.upper()} sweep");ax.set_xlabel('Tokens');ax.set_ylabel(label);ax.legend();ax.grid(True,alpha=.3,linestyle=':');fig.tight_layout();fig.savefig(out/f"{mode}_{metric}.png",dpi=150)
+        ax.set_title(f"{label} – {mode.upper()} sweep")
+        ax.set_xlabel("Tokens")
+        ax.set_ylabel(label)
+        ax.legend()
+        ax.grid(True, alpha=0.3, linestyle=":")
+        fig.tight_layout()
+        fig.savefig(out / f"{mode}_{metric}.png", dpi=150)
     plt.close(fig)
 
 def sweep_table(df,mode):
