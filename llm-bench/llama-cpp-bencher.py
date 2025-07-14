@@ -432,7 +432,7 @@ def main():
         if backend in ('hip','rocwmma'):
             env_opts.append({'ROCBLAS_USE_HIPBLASLT':'1'})
         b_opts=['']
-        if b=='vulkan' and args.moe:
+        if backend=='vulkan' and args.moe:
             b_opts.append('-b 256')
         for env in env_opts:
             for fa in ('','-fa 1'):
