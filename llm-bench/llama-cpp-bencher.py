@@ -413,7 +413,9 @@ def main():
 
     run_start=dt.datetime.now(dt.timezone.utc)
 
-    pp=args.pp or [2**i for i in range(14)];tg=args.tg or pp
+    # Set range - 14=8192; 13=4096
+    pp=args.pp or [2**i for i in range(13)]
+    tg=args.tg or pp
 
     if args.resummarize:
         res=out/'results.jsonl'
