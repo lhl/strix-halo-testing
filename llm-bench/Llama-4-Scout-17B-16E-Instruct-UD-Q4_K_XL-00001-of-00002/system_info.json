@@ -1,0 +1,70 @@
+{
+  "timestamp": "2025-07-13T09:37:42.523006Z",
+  "hostname": "cluster2",
+  "kernel": "6.15.6-arch1-1",
+  "os": "Linux-6.15.6-arch1-1-x86_64-with-glibc2.41",
+  "cpu": "AMD Eng Sample",
+  "rocm_version": "1.16",
+  "hip_version": "HIP version: 6.5.25276-9ef4435b2",
+  "vulkan_version": "1.4.313",
+  "amdgpu_driver": "",
+  "inxi": "System:\n  Host: cluster2 Kernel: 6.15.6-arch1-1 arch: x86_64 bits: 64\n  Console: pty pts/1 Distro: Arch Linux\nMachine:\n  Type: Mini-pc System: Framework product: Desktop (AMD Ryzen AI Max 300 Series) v: 01\n    serial: <superuser required>\n  Mobo: Framework model: FRANMFCP06 v: 76 serial: <superuser required> UEFI: INSYDE v: 03.01\n    date: 06/24/2025\nCPU:\n  Info: 16-core AMD Eng Sample: 100-000001243-50_Y [MT MCP] speed (MHz): avg: 1995\n    min/max: 623/5175\nGraphics:\n  Device-1: Advanced Micro Devices [AMD/ATI] Strix Halo [Radeon Graphics / Radeon 8050S 8060S\n    Graphics] driver: amdgpu v: kernel\n  Display: server: X.org v: 1.21.1.18 with: Xwayland v: 24.1.8 driver: X: loaded: modesetting\n    dri: radeonsi gpu: amdgpu tty: 151x39 resolution: 1920x1080\n  API: OpenGL v: 4.6 compat-v: 4.5 vendor: mesa v: 25.1.5-arch1.1 note: console (EGL sourced)\n    renderer: Radeon 8060S Graphics (radeonsi gfx1151 LLVM 20.1.7 DRM 3.63 6.15.6-arch1-1),\n    llvmpipe (LLVM 20.1.7 256 bits)\n  Info: Tools: api: clinfo, eglinfo, glxinfo, vulkaninfo de: kscreen-console,kscreen-doctor\n    gpu: amdgpu_top wl: wayland-info x11: xdpyinfo, xprop, xrandr\nNetwork:\n  Device-1: Realtek RTL8126 5GbE driver: r8169\nDrives:\n  Local Storage: total: 953.87 GiB used: 514.82 GiB (54.0%)\nInfo:\n  Memory: total: 128 GiB available: 125.12 GiB used: 2.4 GiB (1.9%)\n  Processes: 442 Uptime: 14h 22m Init: systemd Shell: sh inxi: 3.3.38",
+  "llama_cpp_commit": "c31e60647def83d671bac5ab5b35579bf25d9aa1",
+  "gpu": "{\"card0\": {\"Card Series\": \"AMD Radeon Graphics\", \"Card Model\": \"0x1586\", \"Card Vendor\": \"Advanced Micro Devices, Inc. [AMD/ATI]\", \"Card SKU\": \"STRXLGEN\", \"Subsystem ID\": \"0x000a\", \"Device Rev\": \"0xd1\", \"Node ID\": \"1\", \"GUID\": \"17356\", \"GFX Version\": \"gfx1151\"}}",
+  "gpu_details": {
+    "device_name": "Radeon 8060S Graphics",
+    "device_type": "AMDGPU",
+    "gpu_type": "APU",
+    "family": "GC 11.5.0",
+    "asic_name": "GFX1151/Strix Halo",
+    "chip_class": "GFX11_5",
+    "vbios": {
+      "name": "AMD STRIX_HALO_GENERIC",
+      "pn": "113-STRXLGEN-001",
+      "ver_str": "023.011.000.039.000001",
+      "date": "2024/06/17 02:08"
+    },
+    "firmware": {
+      "GFX_ME": {
+        "feature": 35,
+        "ver": "0x1D"
+      },
+      "GFX_PFP": {
+        "feature": 35,
+        "ver": "0x29"
+      },
+      "GFX_RLC": {
+        "feature": 1,
+        "ver": "0x11530505"
+      },
+      "GFX_MEC": {
+        "feature": 35,
+        "ver": "0x1D"
+      },
+      "SMC": {
+        "feature": 0,
+        "ver": "0xA640200"
+      },
+      "SDMA": {
+        "feature": 60,
+        "ver": "0xE"
+      },
+      "ASD": {
+        "feature": 553648366,
+        "ver": "0x210000EE"
+      },
+      "VCN": {
+        "feature": 0,
+        "ver": "0x911800B"
+      },
+      "DMCUB": {
+        "feature": 0,
+        "ver": "0x9002400"
+      },
+      "TOC": {
+        "feature": 0,
+        "ver": "0xB"
+      }
+    }
+  }
+}
