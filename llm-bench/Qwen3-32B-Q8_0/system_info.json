@@ -1,0 +1,70 @@
+{
+  "timestamp": "2025-07-16T02:43:46.695043Z",
+  "hostname": "cluster1",
+  "kernel": "6.15.5-arch1-1",
+  "os": "Linux-6.15.5-arch1-1-x86_64-with-glibc2.41",
+  "cpu": "AMD Eng Sample",
+  "rocm_version": "1.16",
+  "hip_version": "HIP version: 6.5.25273-b82e02c18",
+  "vulkan_version": "1.4.313",
+  "amdgpu_driver": "",
+  "inxi": "",
+  "llama_cpp_commit": "a457551332853ef19d0796fec12b62c538126ea5",
+  "gpu": "{\"card0\": {\"Card Series\": \"AMD Radeon Graphics\", \"Card Model\": \"0x1586\", \"Card Vendor\": \"Advanced Micro Devices, Inc. [AMD/ATI]\", \"Card SKU\": \"STRXLGEN\", \"Subsystem ID\": \"0x000a\", \"Device Rev\": \"0xd1\", \"Node ID\": \"1\", \"GUID\": \"45708\", \"GFX Version\": \"gfx1151\"}}",
+  "gpu_details": {
+    "device_name": "Radeon 8060S Graphics",
+    "device_type": "AMDGPU",
+    "gpu_type": "APU",
+    "family": "GC 11.5.0",
+    "asic_name": "GFX1151/Strix Halo",
+    "chip_class": "GFX11_5",
+    "vbios": {
+      "name": "AMD STRIX_HALO_GENERIC",
+      "pn": "113-STRXLGEN-001",
+      "ver_str": "023.011.000.039.000001",
+      "date": "2024/06/17 02:08"
+    },
+    "firmware": {
+      "GFX_ME": {
+        "feature": 35,
+        "ver": "0x1D"
+      },
+      "GFX_PFP": {
+        "feature": 35,
+        "ver": "0x29"
+      },
+      "GFX_RLC": {
+        "feature": 1,
+        "ver": "0x11530505"
+      },
+      "GFX_MEC": {
+        "feature": 35,
+        "ver": "0x1D"
+      },
+      "SMC": {
+        "feature": 0,
+        "ver": "0xA640200"
+      },
+      "SDMA": {
+        "feature": 60,
+        "ver": "0xE"
+      },
+      "ASD": {
+        "feature": 553648366,
+        "ver": "0x210000EE"
+      },
+      "VCN": {
+        "feature": 0,
+        "ver": "0x911800B"
+      },
+      "DMCUB": {
+        "feature": 0,
+        "ver": "0x9002400"
+      },
+      "TOC": {
+        "feature": 0,
+        "ver": "0xB"
+      }
+    }
+  }
+}
