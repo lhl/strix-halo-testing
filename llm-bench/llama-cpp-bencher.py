@@ -48,6 +48,29 @@ FLAG_LINESTYLES = {
     (True, True, True): (0, (5, 1, 1, 1, 1, 1)),
 }
 
+# Explicit style configuration for particular backend + flag combinations.
+# Each entry may specify ``color``, ``linestyle``, ``linewidth``, ``alpha`` and
+# ``markersize``.  Any property omitted falls back to the defaults provided by
+# ``BACKEND_COLORS`` and ``FLAG_LINESTYLES``.
+STYLE_CONFIG: list[dict] = [
+    # {
+    #     "backend": "hip",
+    #     "fa": False,
+    #     "hipblaslt": False,
+    #     "b": False,
+    #     "color": "tab:blue",
+    #     "linestyle": "-",
+    #     "linewidth": 1.5,
+    #     "alpha": 1.0,
+    #     "markersize": 5,
+    # },
+]
+
+STYLE_LOOKUP: dict[tuple[str, bool, bool, bool], dict] = {
+    (cfg["backend"], bool(cfg.get("fa")), bool(cfg.get("hipblaslt")), bool(cfg.get("b"))): cfg
+    for cfg in STYLE_CONFIG
+}
+
 # ----------------------------- SYSTEM INFO ------------------------------ #
 
 def run_cmd(cmd: str) -> str:
@@ -304,17 +327,31 @@ def comb_plot(df, metric, label, mode, out):
     subset = df[df["mode"] == mode]
     for (build, fa, b, hiplt), grp in subset.groupby(["build", "fa", "b", "hipblaslt"]):
         backend = build.split("-", 1)[-1]
-        color = BACKEND_COLORS.get(backend, "tab:gray")
-        ls = FLAG_LINESTYLES.get((bool(fa), bool(hiplt), bool(b)), "-")
-        ax.plot(grp["value"], grp[metric], marker="o", label=_make_label(build, fa, b, hiplt), color=color, linestyle=ls)
+        key = (backend, bool(fa), bool(hiplt), bool(b))
+        style = STYLE_LOOKUP.get(key, {})
+        color = style.get("color", BACKEND_COLORS.get(backend, "tab:gray"))
+        ls = style.get(
+            "linestyle", FLAG_LINESTYLES.get((bool(fa), bool(hiplt), bool(b)), "-")
+        )
+        ax.plot(
+            grp["value"],
+            grp[metric],
+            marker="o",
+            label=_make_label(build, fa, b, hiplt),
+            color=color,
+            linestyle=ls,
+            linewidth=style.get("linewidth", 1.5),
+            alpha=style.get("alpha", 1.0),
+            markersize=style.get("markersize", 5),
+        )
     if ax.lines:
         ax.set_title(f"{label} – {mode.upper()} sweep")
         ax.set_xlabel("Tokens")
         ax.set_ylabel(label)
-        ax.legend()
+        ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left")
         ax.grid(True, alpha=0.3, linestyle=":")
         fig.tight_layout()
-        fig.savefig(out / f"{mode}_{metric}.png", dpi=150)
+        fig.savefig(out / f"{mode}_{metric}.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
 
 def sweep_table(df,mode):
