@@ -1,61 +1,57 @@
 {
-  "timestamp": "2025-07-21T15:49:17.650974Z",
-  "hostname": "epyc",
-  "kernel": "6.16.0-rc6-1-mainline",
-  "os": "Linux-6.16.0-rc6-1-mainline-x86_64-with-glibc2.41",
-  "cpu": "AMD EPYC 9274F 24-Core Processor",
-  "rocm_version": "1.15",
-  "hip_version": "HIP version: 6.4.43483-a187df25c",
+  "timestamp": "2025-07-18T01:53:52.699681Z",
+  "hostname": "cluster2",
+  "kernel": "6.15.6-arch1-1",
+  "os": "Linux-6.15.6-arch1-1-x86_64-with-glibc2.41",
+  "cpu": "AMD Eng Sample",
+  "rocm_version": "1.16",
+  "hip_version": "HIP version: 6.5.25276-9ef4435b2",
   "vulkan_version": "1.4.321",
   "amdgpu_driver": "",
-  "inxi": "System:\n  Host: epyc Kernel: 6.16.0-rc6-1-mainline arch: x86_64 bits: 64\n  Desktop: GNOME v: 48.3 Distro: CachyOS\nMachine:\n  Type: Server System: Giga product: MZ33-AR0-000 v: 5MZ33AR0MR-000\n    serial: <superuser required>\n  Mobo: Giga model: MZ33-AR0-000 v: 01000100 serial: <superuser required>\n    UEFI: GIGABYTE v: F31 date: 08/09/2024\nCPU:\n  Info: 24-core AMD EPYC 9274F [MT MCP] speed (MHz): avg: 1500\n    min/max: 1500/4304\nGraphics:\n  Device-1: Advanced Micro Devices [AMD/ATI] Navi 31 [Radeon Pro W7900]\n    driver: amdgpu v: kernel\n  Device-2: NVIDIA GA107 [GeForce RTX 3050 6GB] driver: nvidia v: 575.64.03\n  Device-3: ASPEED Graphics Family driver: ast v: kernel\n  Display: wayland server: X.Org v: 24.1.8 with: Xwayland v: 24.1.8\n    compositor: gnome-shell driver: X: loaded: nvidia unloaded: vesa\n    failed: modesetting gpu: amdgpu,ast resolution: 3072x1728~60Hz\n  API: OpenGL v: 4.6.0 compat-v: 4.5 vendor: amd mesa v: 25.1.6-cachyos1.2\n    renderer: AMD Radeon Pro W7900 (radeonsi navi31 LLVM 20.1.8 DRM 3.64\n    6.16.0-rc6-1-mainline)\n  Info: Tools: api: clinfo, eglinfo, glxinfo, vulkaninfo gpu: amdgpu_top,\n    lact, nvidia-settings, nvidia-smi, radeontop wl: wlr-randr\n    x11: xdpyinfo, xprop, xrandr\nNetwork:\n  Device-1: Broadcom BCM57416 NetXtreme-E Dual-Media 10G RDMA Ethernet\n    driver: bnxt_en\n  Device-2: Broadcom BCM57416 NetXtreme-E Dual-Media 10G RDMA Ethernet\n    driver: bnxt_en\nDrives:\n  Local Storage: total: 18.46 TiB used: 8.95 TiB (48.5%)\nInfo:\n  Memory: total: 384 GiB note: est. available: 377.59 GiB\n    used: 83.6 GiB (22.1%)\n  Processes: 1001 Uptime: 22h 6m Shell: sh inxi: 3.3.38",
-  "llama_cpp_commit": "c46503014db0d63fa7b1b28c58adfb51054e2dec",
-  "gpu": "{\"card0\": {\"Card Series\": \"AMD Radeon Pro W7900\", \"Card Model\": \"0x7448\", \"Card Vendor\": \"Advanced Micro Devices, Inc. [AMD/ATI]\", \"Card SKU\": \"D7070100\", \"Subsystem ID\": \"0x0e0d\", \"Device Rev\": \"0x00\", \"Node ID\": \"8\", \"GUID\": \"29512\", \"GFX Version\": \"gfx1100\"}}",
+  "inxi": "System:\n  Host: cluster2 Kernel: 6.15.6-arch1-1 arch: x86_64 bits: 64\n  Console: pty pts/1 Distro: Arch Linux\nMachine:\n  Type: Mini-pc System: Framework product: Desktop (AMD Ryzen AI Max 300 Series) v: 01\n    serial: <superuser required>\n  Mobo: Framework model: FRANMFCP06 v: 76 serial: <superuser required> UEFI: INSYDE\n    v: 03.01 WS002 date: 07/03/2025\nCPU:\n  Info: 16-core AMD Eng Sample: 100-000001243-50_Y [MT MCP] speed (MHz): avg: 3557\n    min/max: 623/5175\nGraphics:\n  Device-1: Advanced Micro Devices [AMD/ATI] Strix Halo [Radeon Graphics / Radeon 8050S 8060S\n    Graphics] driver: amdgpu v: kernel\n  Display: server: X.org v: 1.21.1.18 with: Xwayland v: 24.1.8 driver: X: loaded: modesetting\n    dri: radeonsi gpu: amdgpu tty: 278x68 resolution: 1920x1080\n  API: OpenGL v: 4.6 compat-v: 4.5 vendor: mesa v: 25.1.5-arch1.1 note: console (EGL sourced)\n    renderer: Radeon 8060S Graphics (radeonsi gfx1151 LLVM 20.1.7 DRM 3.63 6.15.6-arch1-1),\n    llvmpipe (LLVM 20.1.7 256 bits)\n  Info: Tools: api: clinfo, eglinfo, glxinfo, vulkaninfo de: kscreen-console,kscreen-doctor\n    gpu: amd-smi,amdgpu_top wl: wayland-info x11: xdpyinfo, xprop, xrandr\nNetwork:\n  Device-1: Realtek RTL8126 5GbE driver: r8169\nDrives:\n  Local Storage: total: 953.87 GiB used: 532.16 GiB (55.8%)\nInfo:\n  Memory: total: 128 GiB available: 125.12 GiB used: 2.13 GiB (1.7%)\n  Processes: 545 Uptime: 45m Init: systemd Shell: sh inxi: 3.3.38",
+  "llama_cpp_commit": "086cf81e88fb75287b71ff19c08a206b7bc2e02f",
+  "gpu": "{\"card0\": {\"Card Series\": \"AMD Radeon Graphics\", \"Card Model\": \"0x1586\", \"Card Vendor\": \"Advanced Micro Devices, Inc. [AMD/ATI]\", \"Card SKU\": \"STRXLGEN\", \"Subsystem ID\": \"0x000a\", \"Device Rev\": \"0xd1\", \"Node ID\": \"1\", \"GUID\": \"17356\", \"GFX Version\": \"gfx1151\"}}",
   "gpu_details": {
-    "device_name": "AMD Radeon Pro W7900",
+    "device_name": "Radeon 8060S Graphics",
     "device_type": "AMDGPU",
-    "gpu_type": "dGPU",
-    "family": "GC 11.0.0",
-    "asic_name": "GFX1100/Navi31",
-    "chip_class": "GFX11",
+    "gpu_type": "APU",
+    "family": "GC 11.5.0",
+    "asic_name": "GFX1151/Strix Halo",
+    "chip_class": "GFX11_5",
     "vbios": {
-      "name": "AMD D70701_XTW_A0_48GB_WSN_NGO",
-      "pn": "113-D7070100-138",
-      "ver_str": "022.001.002.030.000001",
-      "date": "2023/06/28 17:32"
+      "name": "AMD STRIX_HALO_GENERIC",
+      "pn": "113-STRXLGEN-001",
+      "ver_str": "023.011.000.039.000001",
+      "date": "2024/06/17 02:08"
     },
     "firmware": {
       "GFX_ME": {
-        "feature": 29,
-        "ver": "0x956"
+        "feature": 35,
+        "ver": "0x1D"
       },
       "GFX_PFP": {
-        "feature": 29,
-        "ver": "0x9E2"
+        "feature": 35,
+        "ver": "0x29"
       },
       "GFX_RLC": {
         "feature": 1,
-        "ver": "0x80"
+        "ver": "0x11530505"
       },
       "GFX_MEC": {
-        "feature": 29,
-        "ver": "0xA28"
+        "feature": 35,
+        "ver": "0x1D"
       },
       "SMC": {
         "feature": 0,
-        "ver": "0x4E8100"
+        "ver": "0xA640200"
       },
       "SDMA": {
         "feature": 60,
-        "ver": "0x18"
-      },
-      "SOS": {
-        "feature": 3211315,
-        "ver": "0x310033"
+        "ver": "0xE"
       },
       "ASD": {
-        "feature": 553648367,
-        "ver": "0x210000EF"
+        "feature": 553648366,
+        "ver": "0x210000EE"
       },
       "VCN": {
         "feature": 0,
@@ -63,11 +59,11 @@
       },
       "DMCUB": {
         "feature": 0,
-        "ver": "0x7002F00"
+        "ver": "0x9002400"
       },
       "TOC": {
-        "feature": 12,
-        "ver": "0xC"
+        "feature": 0,
+        "ver": "0xB"
       }
     }
   }
