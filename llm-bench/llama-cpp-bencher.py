@@ -422,7 +422,8 @@ def main():
     if args.outdir:
         out = Path(args.outdir)
     elif args.model:
-        out = Path(Path(args.model).stem)
+        p = Path(args.model)
+        out = Path(p.stem if p.suffix == '.gguf' else p.name)
     else:
         ap.error('must specify --outdir or --model to locate results')
     out.mkdir(exist_ok=True)
