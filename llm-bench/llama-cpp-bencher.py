@@ -30,45 +30,26 @@ from loguru import logger
 
 # --------------------------- PLOT STYLE CONFIG --------------------------- #
 
-BACKEND_COLORS = {
-    "hip": "tab:blue",
-    "rocwmma": "tab:orange",
-    "vulkan": "tab:green",
-}
+# Explicit render settings copied from ``dev-chart.ipynb``.  Keys are
+# constructed from backend/flag combinations (see ``_render_key``).
+RENDER = {
+    # HIP
+    "hip":            dict(color=(1.0, 0.0, 0.0, 0.9),  lw=1, ls="-",  marker="s"),
+    "hip_fa":         dict(color=(1.0, 0.0, 0.0, 0.9),  lw=1, ls="--", marker="D"),
+    "hip_hipblaslt":  dict(color=(1.0, 0.4, 0.0, 0.9),  lw=1, ls="-",  marker="s"),
+    "hip_fa_hipblaslt": dict(color=(1.0, 0.4, 0.0, 0.9), lw=1, ls="--", marker="D"),
 
-# style mapping for flag combinations: (fa, hipblaslt, b_present)
-FLAG_LINESTYLES = {
-    (False, False, False): "-",
-    (True, False, False): "--",
-    (False, True, False): ":",
-    (True, True, False): "-.",
-    (False, False, True): (0, (5, 2)),
-    (True, False, True): (0, (3, 1, 1, 1)),
-    (False, True, True): (0, (1, 1)),
-    (True, True, True): (0, (5, 1, 1, 1, 1, 1)),
-}
+    # rocWMMA
+    "rocwmma":            dict(color=(0.3, 0.2, 0.5, 0.9), lw=1, ls="-",  marker="s"),
+    "rocwmma_fa":         dict(color=(0.3, 0.2, 0.5, 0.9), lw=1, ls="--", marker="D"),
+    "rocwmma_hipblaslt":  dict(color=(0.8, 0.5, 0.8, 0.9),  lw=1, ls="-",  marker="s"),
+    "rocwmma_fa_hipblaslt": dict(color=(0.8, 0.5, 0.8, 0.9), lw=1, ls="--", marker="D"),
 
-# Explicit style configuration for particular backend + flag combinations.
-# Each entry may specify ``color``, ``linestyle``, ``linewidth``, ``alpha`` and
-# ``markersize``.  Any property omitted falls back to the defaults provided by
-# ``BACKEND_COLORS`` and ``FLAG_LINESTYLES``.
-STYLE_CONFIG: list[dict] = [
-    # {
-    #     "backend": "hip",
-    #     "fa": False,
-    #     "hipblaslt": False,
-    #     "b": False,
-    #     "color": "tab:blue",
-    #     "linestyle": "-",
-    #     "linewidth": 1.5,
-    #     "alpha": 1.0,
-    #     "markersize": 5,
-    # },
-]
-
-STYLE_LOOKUP: dict[tuple[str, bool, bool, bool], dict] = {
-    (cfg["backend"], bool(cfg.get("fa")), bool(cfg.get("hipblaslt")), bool(cfg.get("b"))): cfg
-    for cfg in STYLE_CONFIG
+    # Vulkan
+    "vulkan":            dict(color=(0.0, 0.5, 0.0, 0.9), lw=1, ls="-",  marker="s"),
+    "vulkan_fa":         dict(color=(0.0, 0.5, 0.0, 0.9), lw=1, ls="--", marker="D"),
+    "vulkan_b=256":      dict(color=(0.0, 0.8, 0.5, 0.9), lw=1, ls="-",  marker="s"),
+    "vulkan_fa_b=256":   dict(color=(0.0, 0.8, 0.5, 0.9), lw=1, ls="--", marker="D"),
 }
 
 # ----------------------------- SYSTEM INFO ------------------------------ #
@@ -310,6 +291,19 @@ def _format_b_flag(b: str) -> str:
     return b
 
 
+def _render_key(build: str, fa: str, b: str, hiplt: str) -> str:
+    """Return the key used to look up style info in :data:`RENDER`."""
+    backend = build.split("-", 1)[-1]
+    parts = [backend]
+    if fa:
+        parts.append("fa")
+    if hiplt:
+        parts.append("hipblaslt")
+    if b:
+        parts.append(_format_b_flag(b))
+    return "_".join(parts)
+
+
 def _make_label(build: str, fa: str, b: str, hiplt: str) -> str:
     backend = build.split("-", 1)[-1].upper()
     parts = []
@@ -326,23 +320,13 @@ def comb_plot(df, metric, label, mode, out):
     fig, ax = plt.subplots(figsize=(8, 5))
     subset = df[df["mode"] == mode]
     for (build, fa, b, hiplt), grp in subset.groupby(["build", "fa", "b", "hipblaslt"]):
-        backend = build.split("-", 1)[-1]
-        key = (backend, bool(fa), bool(hiplt), bool(b))
-        style = STYLE_LOOKUP.get(key, {})
-        color = style.get("color", BACKEND_COLORS.get(backend, "tab:gray"))
-        ls = style.get(
-            "linestyle", FLAG_LINESTYLES.get((bool(fa), bool(hiplt), bool(b)), "-")
-        )
+        key = _render_key(build, fa, b, hiplt)
+        style = RENDER.get(key, {})
         ax.plot(
             grp["value"],
             grp[metric],
-            marker="o",
             label=_make_label(build, fa, b, hiplt),
-            color=color,
-            linestyle=ls,
-            linewidth=style.get("linewidth", 1.5),
-            alpha=style.get("alpha", 1.0),
-            markersize=style.get("markersize", 5),
+            **style,
         )
     if ax.lines:
         ax.set_title(f"{label} – {mode.upper()} sweep")
