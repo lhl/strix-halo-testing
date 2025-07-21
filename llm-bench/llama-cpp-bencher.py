@@ -406,7 +406,7 @@ def write_summary(df,out):
 
 def main():
     ap=argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter,description='llama.cpp benchmark helper')
-    ap.add_argument('-m','--model',required=True);ap.add_argument('-o','--outdir')
+    ap.add_argument('-m','--model');ap.add_argument('-o','--outdir')
     ap.add_argument('-b','--builds',nargs='*');ap.add_argument('--build-root',type=Path,default=Path('/home/lhl/llama.cpp'))
     ap.add_argument('-p','--pp',nargs='*',type=int);ap.add_argument('-n','--tg',nargs='*',type=int)
     ap.add_argument('--flags',default='')
@@ -416,20 +416,41 @@ def main():
     ap.add_argument('--rerun',action='store_true',help='force sweep rerun even if results exist')
     args=ap.parse_args()
 
-    found=discover_builds(args.build_root)
-    if args.list_builds:
-        logger.info('\n'.join(f"{k}: {v}" for k,v in found.items()))
-        return
-    sel=args.builds or list(found.keys());builds={n:found.get(n,n) for n in sel}
-    out=Path(args.outdir) if args.outdir else Path(Path(args.model).stem);out.mkdir(exist_ok=True)
+    if not args.resummarize and not args.model:
+        ap.error('the following arguments are required: -m/--model')
+
+    if args.outdir:
+        out = Path(args.outdir)
+    elif args.model:
+        out = Path(Path(args.model).stem)
+    else:
+        ap.error('must specify --outdir or --model to locate results')
+    out.mkdir(exist_ok=True)
+
     logger.remove()
     logger.add(sys.stderr, level="INFO")
     logger.add(out/"run.log", level="DEBUG")
 
+    if args.resummarize:
+        res = out/'results.jsonl'
+        if not res.exists():
+            logger.warning('No results.jsonl in {}', out)
+            return
+        df = pd.read_json(res, orient='records', lines=True)
+        write_summary(df, out)
+        logger.info('Summary updated from existing results')
+        return
+
+    found = discover_builds(args.build_root)
+    if args.list_builds:
+        logger.info('\n'.join(f"{k}: {v}" for k,v in found.items()))
+        return
+    sel = args.builds or list(found.keys());builds = {n:found.get(n,n) for n in sel}
+
     # capture system information once per run
-    any_bin=next(iter(builds.values())) if builds else None
+    any_bin = next(iter(builds.values())) if builds else None
     if any_bin:
-        sys_info=gather_system_info(any_bin)
+        sys_info = gather_system_info(any_bin)
         (out/'system_info.json').write_text(json.dumps(sys_info,indent=2))
 
     run_start=dt.datetime.now(dt.timezone.utc)
@@ -437,16 +458,6 @@ def main():
     # Set range - 14=8192; 13=4096
     pp=args.pp or [2**i for i in range(13)]
     tg=args.tg or pp
-
-    if args.resummarize:
-        res=out/'results.jsonl'
-        if not res.exists():
-            logger.warning('No results.jsonl in {}', out)
-            return
-        df=pd.read_json(res,orient='records',lines=True)
-        write_summary(df,out)
-        logger.info('Summary updated from existing results')
-        return
 
     raw=(out/'raw_runs.jsonl').open('a');records=[]
     res_file=out/'results.jsonl'
