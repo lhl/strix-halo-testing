@@ -182,9 +182,13 @@ def get_best_performance_for_backend(df, backend_config, mode):
     
     # Get the performance values and memory info
     performance = filtered_df.groupby('value')['tokens_per_sec'].max()
-    max_memory = filtered_df[['vram_peak_mib', 'gtt_peak_mib']].sum(axis=1).max()
     
-    return performance, max_memory
+    # Calculate memory for each token length
+    filtered_df_with_memory = filtered_df.copy()
+    filtered_df_with_memory['total_memory'] = filtered_df_with_memory['vram_peak_mib'] + filtered_df_with_memory['gtt_peak_mib']
+    memory_by_tokens = filtered_df_with_memory.groupby('value')['total_memory'].max()
+    
+    return performance, memory_by_tokens
 
 def get_best_performance(df, model_info, mode):
     """Get the best performance for a model in the given mode."""
@@ -294,11 +298,21 @@ def create_mode_table(all_results, mode, sort_by='weights', sort_descending=True
         backend_config = model_info[mode]
         
         # Get both PP and TG performance from the same backend
-        pp_performance_same_backend, pp_memory_same_backend = get_best_performance_for_backend(df, backend_config, 'pp')
-        tg_performance_same_backend, tg_memory_same_backend = get_best_performance_for_backend(df, backend_config, 'tg')
+        pp_performance_same_backend, pp_memory_by_tokens = get_best_performance_for_backend(df, backend_config, 'pp')
+        tg_performance_same_backend, tg_memory_by_tokens = get_best_performance_for_backend(df, backend_config, 'tg')
         
-        # Use memory from whichever mode is available (they should be the same backend)
-        backend_memory = pp_memory_same_backend if pp_memory_same_backend is not None else tg_memory_same_backend
+        # Use memory from the specific token lengths we're reporting (512 for PP, 128 for TG)
+        pp512_memory = pp_memory_by_tokens.get(512, None) if pp_memory_by_tokens is not None else None
+        tg128_memory = tg_memory_by_tokens.get(128, None) if tg_memory_by_tokens is not None else None
+        
+        # Take the max of the two token lengths for fair comparison
+        backend_memory = None
+        if pp512_memory is not None and tg128_memory is not None:
+            backend_memory = max(pp512_memory, tg128_memory)
+        elif pp512_memory is not None:
+            backend_memory = pp512_memory
+        elif tg128_memory is not None:
+            backend_memory = tg128_memory
         
         pp512_val = pp_performance_same_backend.get(512, None) if pp_performance_same_backend is not None else None
         tg128_val = tg_performance_same_backend.get(128, None) if tg_performance_same_backend is not None else None
