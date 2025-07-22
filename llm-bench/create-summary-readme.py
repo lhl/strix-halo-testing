@@ -75,6 +75,19 @@ MODELS = {
             "ls": ":",
         },
     },
+    "Qwen3-32B-Q8_0": {
+        "name": "Qwen 3 32B Q8_0",
+        "arch": "Qwen 3",
+        "weights": 32,
+        "active": 32,
+        "pp": "hip_hipblaslt",
+        "tg": "vulkan_fa",
+        "line": {
+            "color": (0.3, 0.3, 0.8, 0.9),
+            "lw": 1,
+            "ls": "-",
+        },
+    },
     "llama-2-7b.Q4_0": {
         "name": "Llama 2 7B Q4_0",
         "arch": "Llama 2",
