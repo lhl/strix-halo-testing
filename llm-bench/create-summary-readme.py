@@ -145,6 +145,47 @@ def load_model_results(model_key):
         print(f"Error loading results for {model_key}: {e}")
         return None
 
+def get_best_performance_for_backend(df, backend_config, mode):
+    """Get performance for a specific backend configuration and mode."""
+    if df is None or df.empty:
+        return None, None
+    
+    # Filter for the specific backend configuration
+    if backend_config == "vulkan_fa_b=256":
+        mask = (df['build'].str.contains('vulkan', na=False)) & \
+               (df['fa'] == '-fa 1') & \
+               (df['b'] == '-b 256')
+    elif backend_config == "vulkan_fa":
+        mask = (df['build'].str.contains('vulkan', na=False)) & \
+               (df['fa'] == '-fa 1') & \
+               (df['b'] == '')
+    elif backend_config == "vulkan_b=256":
+        mask = (df['build'].str.contains('vulkan', na=False)) & \
+               (df['fa'] == '') & \
+               (df['b'] == '-b 256')
+    elif backend_config == "vulkan":
+        mask = (df['build'].str.contains('vulkan', na=False)) & \
+               (df['fa'] == '') & \
+               (df['b'] == '')
+    elif backend_config == "hip_hipblaslt":
+        mask = (df['build'].str.contains('hip', na=False)) & \
+               (df['hipblaslt'] == '1')
+    elif backend_config == "rocwmma":
+        mask = (df['build'].str.contains('rocwmma', na=False))
+    else:
+        mask = df['build'].str.contains(backend_config, na=False)
+    
+    filtered_df = df[mask & (df['mode'] == mode)]
+    
+    if filtered_df.empty:
+        return None, None
+    
+    # Get the performance values and memory info
+    performance = filtered_df.groupby('value')['tokens_per_sec'].max()
+    max_memory = filtered_df[['vram_peak_mib', 'gtt_peak_mib']].sum(axis=1).max()
+    
+    return performance, max_memory
+
 def get_best_performance(df, model_info, mode):
     """Get the best performance for a model in the given mode."""
     if df is None or df.empty:
@@ -245,10 +286,22 @@ def create_mode_table(all_results, mode, sort_by='weights', sort_descending=True
         if mode_performance is None:
             continue
         
-        # For this table, we want to show both pp512 and tg128 using THIS mode's optimal backend
-        # This means the non-optimal value might be lower, but shows what you'd get with this backend
-        pp512_val = mode_performance.get(512, None)
-        tg128_val = mode_performance.get(128, None)
+        # For each table, we need to get both PP and TG performance from the SAME backend
+        # The mode_performance only contains performance for the current mode
+        # We need to get both PP and TG performance from the same backend configuration
+        
+        # Get the backend configuration for this mode
+        backend_config = model_info[mode]
+        
+        # Get both PP and TG performance from the same backend
+        pp_performance_same_backend, pp_memory_same_backend = get_best_performance_for_backend(df, backend_config, 'pp')
+        tg_performance_same_backend, tg_memory_same_backend = get_best_performance_for_backend(df, backend_config, 'tg')
+        
+        # Use memory from whichever mode is available (they should be the same backend)
+        backend_memory = pp_memory_same_backend if pp_memory_same_backend is not None else tg_memory_same_backend
+        
+        pp512_val = pp_performance_same_backend.get(512, None) if pp_performance_same_backend is not None else None
+        tg128_val = tg_performance_same_backend.get(128, None) if tg_performance_same_backend is not None else None
         
         pp512 = f"{round(float(pp512_val), 1):.1f}" if pp512_val is not None else "-"
         tg128 = f"{round(float(tg128_val), 1):.1f}" if tg128_val is not None else "-"
@@ -265,7 +318,7 @@ def create_mode_table(all_results, mode, sort_by='weights', sort_descending=True
             'Flags': extract_flags(backend_config),
             'pp512': pp512,
             'tg128': tg128,
-            'Memory (Max MiB)': f"{mode_memory:.0f}" if mode_memory and mode_memory > 0 else "-",
+            'Memory (Max MiB)': f"{backend_memory:.0f}" if backend_memory and backend_memory > 0 else "-",
         }
         
         rows.append(row)
