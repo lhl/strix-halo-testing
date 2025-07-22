@@ -399,8 +399,27 @@ def write_summary(df,out):
     top_tab=tabulate(table,headers=headers,tablefmt='github')
     pp_tab=sweep_table(df,'pp')
     tg_tab=sweep_table(df,'tg')
-    md='\n\n'.join([top_tab,'\n### PP sweep\n',pp_tab,'\n### TG sweep\n',tg_tab])
-    (out/'summary.md').write_text(md)
+    
+    # Build markdown with inlined graphs
+    md_parts = [
+        "# Benchmark Results\n",
+        top_tab,
+        "\n## Performance Charts\n",
+        "\n### Tokens/s Performance\n",
+        f"![PP Tokens/s](pp_tokens_per_sec.png)\n",
+        f"![TG Tokens/s](tg_tokens_per_sec.png)\n",
+        "\n### Memory Usage\n",
+        f"![PP VRAM](pp_vram_peak_mib.png)\n", 
+        f"![TG VRAM](tg_vram_peak_mib.png)\n",
+        "\n## Detailed Sweeps\n",
+        "\n### PP sweep\n",
+        pp_tab,
+        "\n### TG sweep\n",
+        tg_tab
+    ]
+    
+    md = ''.join(md_parts)
+    (out/'README.md').write_text(md)
 
 # ------------------------------ MAIN ------------------------------------- #
 
