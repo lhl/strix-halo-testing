@@ -1,10 +1,10 @@
 # Strix Halo LLM Benchmark Results
 
-All testing was done on pre-production [Framework Desktop](https://frame.work/desktop) systems with a [AMD Ryzen Max+ 395](https://www.amd.com/en/products/processors/laptop/ryzen/ai-300-series/amd-ryzen-ai-max-plus-395.html) (Strix Halo)/128GB LPDDR5x-8000 configuration. (Thanks Nirav, Alexandru, and co!)
+All testing was done on pre-production [Framework Desktop](https://frame.work/desktop) systems with an [AMD Ryzen Max+ 395](https://www.amd.com/en/products/processors/laptop/ryzen/ai-300-series/amd-ryzen-ai-max-plus-395.html) (Strix Halo)/128GB LPDDR5x-8000 configuration. (Thanks Nirav, Alexandru, and co!)
 
 Exact testing/system details are in the results folders, but roughly these are running:
 - Close to production BIOS/EC
-- Relatively up-to-date kernesl: 6.15.5-arch1-1/6.15.6-arch1-1
+- Relatively up-to-date kernels: 6.15.5-arch1-1/6.15.6-arch1-1
 - Recent TheRock/ROCm-7.0 [nightly builds](https://github.com/ROCm/TheRock/releases/) with Strix Halo (gfx1151) kernels
 - Recent [llama.cpp](https://github.com/ggml-org/llama.cpp/) builds (eg [b5863](https://github.com/ggml-org/llama.cpp/tree/b5863) from 2005-07-10)
 
