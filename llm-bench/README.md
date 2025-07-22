@@ -20,6 +20,7 @@ Just to get a ballpark on the hardware:
 | Model Name                   | Architecture   |   Weights (B) |   Active (B) | Backend     | Flags      |   pp512 |   tg128 |   Memory (Max MiB) |
 |------------------------------|----------------|---------------|--------------|-------------|------------|---------|---------|--------------------|
 | Llama 2 7B Q4_0              | Llama 2        |             7 |            7 | Vulkan      |            |   998.0 |  1283.4 |               8646 |
+| Llama 2 7B Q4_K_M            | Llama 2        |             7 |            7 | HIP         | hipBLASLt  |   906.1 |   400.4 |              11025 |
 | Shisa V2 8B i1-Q4_K_M        | Llama 3        |             8 |            8 | HIP         | hipBLASLt  |   878.2 |   327.6 |               8344 |
 | Qwen 3 30B-A3B UD-Q4_K_XL    | Qwen 3 MoE     |            30 |            3 | Vulkan      | fa=1       |   604.8 |   414.6 |              17874 |
 | Mistral Small 3.1 UD-Q4_K_XL | Mistral 3      |            24 |           24 | HIP         | hipBLASLt  |   316.9 |   157.2 |              16090 |
@@ -34,6 +35,7 @@ Just to get a ballpark on the hardware:
 | Model Name                   | Architecture   |   Weights (B) |   Active (B) | Backend   | Flags      |   pp512 |   tg128 |   Memory (Max MiB) |
 |------------------------------|----------------|---------------|--------------|-----------|------------|---------|---------|--------------------|
 | Qwen 3 30B-A3B UD-Q4_K_XL    | Qwen 3 MoE     |            30 |            3 | Vulkan    | b=256      |    70.0 |    72.0 |              17719 |
+| Llama 2 7B Q4_K_M            | Llama 2        |             7 |            7 | Vulkan    | fa=1       |    47.1 |    47.9 |               8324 |
 | Llama 2 7B Q4_0              | Llama 2        |             7 |            7 | Vulkan    | fa=1       |    45.3 |    45.8 |               8080 |
 | Shisa V2 8B i1-Q4_K_M        | Llama 3        |             8 |            8 | Vulkan    | fa=1       |    41.9 |    42.0 |               6308 |
 | dots1 UD-Q4_K_XL             | dots1 MoE      |           142 |           14 | Vulkan    | fa=1 b=256 |    20.4 |    20.6 |              87557 |
@@ -41,6 +43,7 @@ Just to get a ballpark on the hardware:
 | Hunyuan-A13B UD-Q6_K_XL      | Hunyuan MoE    |            80 |           13 | Vulkan    | fa=1 b=256 |    17.1 |    17.1 |              69064 |
 | Mistral Small 3.1 UD-Q4_K_XL | Mistral 3      |            24 |           24 | Vulkan    | fa=1       |    14.3 |    14.3 |              15755 |
 | Shisa V2 70B i1-Q4_K_M       | Llama 3        |            70 |           70 | Vulkan    | fa=1       |     5.0 |     5.0 |              42583 |
+
 
 ## Testing Notes
 The best overall backend and flags were chosen for each model family tested. You can see that often times the best backend for prefill vs token generation differ. Full results for each model (including the pp/tg graphs for different context lengths for all tested backend variations) are available for review in their respective folders as which backend is the best performing will depend on your exact use-case.
