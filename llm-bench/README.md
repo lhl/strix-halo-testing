@@ -1,6 +1,6 @@
 # Strix Halo LLM Benchmark Results
 
-All testing was done on pre-production [Framework Desktop](https://frame.work/desktop) systems in a [AMD Ryzen Max+ 395](https://www.amd.com/en/products/processors/laptop/ryzen/ai-300-series/amd-ryzen-ai-max-plus-395.html) (Strix Halo)/128GB LPDDR5x-8000 configuration.
+All testing was done on pre-production [Framework Desktop](https://frame.work/desktop) systems with a [AMD Ryzen Max+ 395](https://www.amd.com/en/products/processors/laptop/ryzen/ai-300-series/amd-ryzen-ai-max-plus-395.html) (Strix Halo)/128GB LPDDR5x-8000 configuration. (Thanks Nirav, Alexandru, and co!)
 
 Exact testing/system details are in the results folders, but roughly these are running:
 - Close to production BIOS/EC
@@ -44,3 +44,5 @@ Just to get a ballpark on the hardware:
 
 ## Testing Notes
 The best overall backend and flags were chosen for each model family tested. You can see that often times the best backend for prefill vs token generation differ. Full results for each model (including the pp/tg graphs for different context lengths for all tested backend variations) are available for review in their respective folders as which backend is the best performing will depend on your exact use-case.
+
+There's a lot of performance still on the table when it comes to pp especially. Since these results should be close to optimal for when they were tested, I might add dates to the table  (adding kernel, ROCm, and llama.cpp build#'s might be a bit much).
