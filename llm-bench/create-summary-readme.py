@@ -88,6 +88,19 @@ MODELS = {
             "ls": "-",
         },
     },
+    "llama-2-7b.Q4_K_M": {
+        "name": "Llama 2 7B Q4_K_M",
+        "arch": "Llama 2",
+        "weights": 7,
+        "active": 7,
+        "pp": "hip_hipblaslt",
+        "tg": "vulkan_fa",
+        "line": {
+            "color": (0.1, 0.4, 1.0, 0.9),
+            "lw": 1,
+            "ls": "-",
+        },
+    },
     "shisa-v2-llama3.1-8b.i1-Q4_K_M": {
         "name": "Shisa V2 8B i1-Q4_K_M",
         "arch": "Llama 3",
