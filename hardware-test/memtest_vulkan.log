@@ -18,3 +18,27 @@ Standard 5-minute test of 1: Bus=0xC2:00 DevId=0x1586   78GB Radeon 8060S Graphi
 Standard 5-minute test PASSed! Just press Ctrl+C unless you plan long test run.
 Extended endless test started; testing more than 2 hours is usually unneeded
 use Ctrl+C to stop it when you decide it's enough
+Tester console logging started at 2025-07-29T13:37:58.291587Z
+
+1: Bus=0xC3:00 DevId=0x1586   79GB Radeon 8060S Graphics (RADV GFX1151)
+Tester worker logging started at 2025-07-29T13:37:58.308548Z
+Standard 5-minute test of 1: Bus=0xC3:00 DevId=0x1586   79GB Radeon 8060S Graphics (RADV GFX1151)
+      1 iteration. Passed  0.6668 seconds  written:   72.5GB 228.6GB/sec        checked:   76.1GB 217.7GB/sec
+      3 iteration. Passed  1.3345 seconds  written:  145.0GB 229.4GB/sec        checked:  152.2GB 216.7GB/sec
+     11 iteration. Passed  5.3006 seconds  written:  580.0GB 231.3GB/sec        checked:  609.0GB 218.0GB/sec
+     57 iteration. Passed 30.6377 seconds  written: 3335.0GB 229.5GB/sec        checked: 3501.8GB 217.4GB/sec
+    102 iteration. Passed 30.0156 seconds  written: 3262.5GB 229.4GB/sec        checked: 3425.6GB 216.9GB/sec
+    147 iteration. Passed 30.0060 seconds  written: 3262.5GB 229.2GB/sec        checked: 3425.6GB 217.2GB/sec
+    192 iteration. Passed 30.0038 seconds  written: 3262.5GB 229.3GB/sec        checked: 3425.6GB 217.2GB/sec
+    237 iteration. Passed 30.0072 seconds  written: 3262.5GB 229.4GB/sec        checked: 3425.6GB 217.0GB/sec
+    283 iteration. Passed 30.6680 seconds  written: 3335.0GB 229.5GB/sec        checked: 3501.8GB 217.0GB/sec
+    328 iteration. Passed 30.0094 seconds  written: 3262.5GB 229.2GB/sec        checked: 3425.6GB 217.1GB/sec
+    373 iteration. Passed 30.0128 seconds  written: 3262.5GB 229.3GB/sec        checked: 3425.6GB 217.0GB/sec
+    418 iteration. Passed 30.0270 seconds  written: 3262.5GB 229.3GB/sec        checked: 3425.6GB 216.8GB/sec
+Standard 5-minute test PASSed! Just press Ctrl+C unless you plan long test run.
+Extended endless test started; testing more than 2 hours is usually unneeded
+use Ctrl+C to stop it when you decide it's enough
+    509 iteration. Passed 30.6203 seconds  written: 3335.0GB 229.8GB/sec        checked: 3501.8GB 217.4GB/sec
+    554 iteration. Passed 30.0352 seconds  written: 3262.5GB 229.2GB/sec        checked: 3425.6GB 216.8GB/sec
+    599 iteration. Passed 30.0097 seconds  written: 3262.5GB 229.3GB/sec        checked: 3425.6GB 217.1GB/sec
+    644 iteration. Passed 30.0049 seconds  written: 3262.5GB 229.5GB/sec        checked: 3425.6GB 216.9GB/sec
