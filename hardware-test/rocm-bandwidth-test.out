@@ -1,0 +1,45 @@
+....................
+          RocmBandwidthTest Version: 2.6.0
+
+          Launch Command is: ./rocm-bandwidth-test (rocm_bandwidth -a + rocm_bandwidth -A)
+
+
+          Device: 0,  AMD RYZEN AI MAX+ 395 w/ Radeon 8060S
+          Device: 1,  AMD Radeon Graphics,  GPU-XX,  c3:0.0
+
+          Inter-Device Access
+
+          D/D       0         1         
+
+          0         1         1         
+
+          1         1         1         
+
+
+          Inter-Device Numa Distance
+
+          D/D       0         1         
+
+          0         0         20        
+
+          1         20        0         
+
+
+          Unidirectional copy peak bandwidth GB/s
+
+          D/D       0           1           
+
+          0         N/A         83.715      
+
+          1         85.476      212.588     
+
+
+          Bidirectional copy peak bandwidth GB/s
+
+          D/D       0           1           
+
+          0         N/A         84.706      
+
+          1         84.706      N/A         
+
+
