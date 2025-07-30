@@ -6,14 +6,15 @@ set -euo pipefail
 REPO="https://github.com/ggml-org/llama.cpp"
 
 # Name -> cmake options
+
 declare -A OPTS=(
   [cpu]=""
-  [hip]="-DLLAMA_HIPBLAS=on"
-  [rocwmma]="-DLLAMA_HIPBLAS=on -DLLAMA_USE_ROCM_WMMA=on"
-  [vulkan]="-DLLAMA_VULKAN=on"
+  [hip]="-DGGML_HIPBLAS=on -DAMDGPU_TARGETS=gfx1151"
+  [rocwmma]="-DGGML_HIPBLAS=on -DGGML_ROCWMMA_FATTN=on -DAMDGPU_TARGETS=gfx1151"
+  [vulkan]="-DGGML_VULKAN=on"
 )
 
-for name in cpu hip rocwmma vulkan; do
+for name in hip rocwmma vulkan; do
     dir="llama.cpp-${name}"
     if [ -d "$dir/.git" ]; then
         echo "Updating $dir"
