@@ -12,6 +12,51 @@ Just to get a ballpark on the hardware:
 - ~215 GB/s max GPU MBW out of a 256 GB/s theoretical (256-bit 8000 MT/s)
 - theoretical 59 FP16 TFLOPS (VPOD/WMMA) on RDNA 3.5 (gfx11); effective is *much* lower
 
+## Setup
+
+### GPU Memory
+For maximum performance, you should `amd_iommu=off` in your kernel - on memtest_vulkan, this translates to about 6% faster memory reads, although llama.cpp performance tends to be smaller (~2% or less for tg). Still, free performance is free performance. Note, `iommu=pt` does not give any speed benefit.
+
+The other thing you want to do is to set the the GPU memory settings. Here's how to allocate 120GB of memory as GTT GPU memory. Set your GPU memory in BIOS (GART) to the minimum 512MB buffer. In Linux, create a conf in your `/etc/modprobe.d/` (like `/etc/modprobe.d/amdgpu_llm_optimized.conf`):
+
+```
+# Maximize GTT for LLM usage on 128GB UMA system
+options amdgpu gttsize=120000
+options ttm pages_limit=31457280
+options ttm page_pool_size=15728640
+```
+
+The Translation Table Maps (TTM) is the memory management subsystem that handles GPU memory allocation. `pages_limit` sets the maximum number or 4KiB pages that can be used for GPU memory. `page_pool_size` pre-caches/allocates the memory for usage by the GPU. This will not be available for your system. You probably don't want to set it too high if you will be using the system for other purposes/need memory.
+
+### Vulkan
+There are multiple [Vulkan libraries](https://wiki.archlinux.org/title/Vulkan) available for AMD and I recommend installing at least two of them. If you're using Arch I recommend:
+
+```
+paru -S vulkan-radeon amdvlk vulkan-headers vulkan-tools
+```
+
+`amdvlk` (AMDVLK Open) will be used by default and in general seems to be faster than `vulkan-radeon` (Mesa RADV). When both are installed, AMDVLK is used by default, but you can use this env variable: `AMD_VULKAN_ICD=RADV` to use Mesa RADV to test.
+
+I've seen anywhere from no difference to 2X difference in pp performance (AMDVLK always seems to be faster) in limited testing although this may change depending on updates to the libraries. I don't swap Vulkan libs on my current sweeps but it's something to consider in the future...
+
+### ROCm
+Instead of using the [ROCm AUR packages](https://wiki.archlinux.org/title/GPGPU#ROCm) it's probably best for now to be using the [latest releases from TheRock](https://github.com/ROCm/TheRock/releases). You can simply make a folder (like `/opt/rocm`) and untar a `gfx1151` release in that.
+
+```
+# See latest nightlies
+wget https://github.com/ROCm/TheRock/releases/download/nightly-tarball/therock-dist-linux-gfx1151-7.0.0rc20250714.tar.gz
+mkdir rocm7.0
+cd rocm7.0
+tar xvf ../therock-dist-linux-gfx1151-7.0.0rc20250714.tar.gz
+```
+
+- You might want to install a gfx110x version first if you want gfx1100 kernels to test as well
+
+- You can choose wherever you want to put it and refer to [rocm-therock-env.sh](../rocm-therock-env.sh) for how to load the appropriate environment variables
+
+NOTE: for llama.cpp you may need to tweak `ggml/src/ggml-cuda/vendors/hip.h` if you get a compilation error - The #ifdef used is wrong (deprecations were with 6.5 on, you might also just need/want to copy the fixed macros into the else statement
+
+
 ## Results
 
 ### Prompt Processing (pp) Performance
