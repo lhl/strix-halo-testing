@@ -227,7 +227,7 @@ def run_bench(bin:str,model:str,flags:str,mode:str,val:int,gpu:bool,raw_sink,int
     if val==0:
         return {}
     bench_args=f"-p {val} -n 0" if mode=='pp' else f"-p 0 -n {val}"
-    cmd=f"{shlex.quote(bin)} -m {shlex.quote(model)} {bench_args} {flags} -o jsonl"
+    cmd=f"{shlex.quote(bin)} --mmap 0 -m {shlex.quote(model)} {bench_args} {flags} -o jsonl"
     opt_parts=[]
     if extra:
         opt_parts.append(" ".join(f"{k}={v}" for k,v in extra.items() if v))
