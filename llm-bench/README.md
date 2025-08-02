@@ -54,8 +54,14 @@ tar xvf ../therock-dist-linux-gfx1151-7.0.0rc20250714.tar.gz
 
 - You can choose wherever you want to put it and refer to [rocm-therock-env.sh](../rocm-therock-env.sh) for how to load the appropriate environment variables
 
-NOTE: for llama.cpp you may need to tweak `ggml/src/ggml-cuda/vendors/hip.h` if you get a compilation error - The #ifdef used is wrong (deprecations were with 6.5 on, you might also just need/want to copy the fixed macros into the else statement
+### llama.cpp
+You can reference the `[llama-cpp-bencher.py](llama-cpp-bencher.py)` directly for more info, but a few notes:
 
+- There is an [update-llama.cpp.sh](update-llama.cpp.sh) convenience script, but refer to the [official llama.cpp build docs](https://github.com/ggml-org/llama.cpp/blob/master/docs/build.md) for the latest/most authoritative documentation
+  - When compiling the ROCm/HIP backend, you may need to tweak `ggml/src/ggml-cuda/vendors/hip.h` if you get a compilation error - The #ifdef versioning used is wrong (deprecations were with 6.5 on) - you might also just need/want to copy the fixed macros into the else statement...
+- For the ROCm backend, generally using the hipblaslt libs will be faster, using the `ROCBLAS_USE_HIPBLASLT=1` environment variable
+- As mentioned, in my testing the AMDVLK Vulkan implementation seems to always be faster, although you can use `AMD_VULKAN_ICD=RADV` if necessary to use the Mesa RADV Vulkan if you have both installed
+- Be sure to disable mmap, eg `--mmap 0` for `llama-bench` or `--no-mmap` for `llama-cli` or `llama-server` otherwise you may incur extreme model loading speed penalties with the ROCm backend if exceeding 50% of the available system memory
 
 ## Results
 
