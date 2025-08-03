@@ -88,6 +88,19 @@ MODELS = {
             "ls": "-",
         },
     },
+    "Qwen3-235B-A22B-Instruct-2507-UD-Q3_K_XL": {
+        "name": "Qwen 3 235B-A22B UD-Q4_K_XL",
+        "arch": "Qwen 3 MoE",
+        "weights": 235,
+        "active": 22,
+        "pp": "hip_hipblaslt",
+        "tg": "vulkan_fa",
+        "line": {
+            "color": (0.3, 0.1, 0.6, 0.9),
+            "lw": 1,
+            "ls": ":",
+        },
+    },
     "llama-2-7b.Q4_0": {
         "name": "Llama 2 7B Q4_0",
         "arch": "Llama 2",
