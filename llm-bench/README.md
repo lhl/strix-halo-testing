@@ -78,6 +78,7 @@ You can reference the `[llama-cpp-bencher.py](llama-cpp-bencher.py)` directly fo
 | Hunyuan-A13B UD-Q6_K_XL      | Hunyuan MoE    |            80 |           13 | Vulkan      | fa=1       |   270.5 |    17.1 |              68785 |
 | Llama 4 Scout UD-Q4_K_XL     | Llama 4 MoE    |           109 |           17 | HIP         | hipBLASLt  |   264.1 |    17.2 |              59720 |
 | Qwen 3 32B Q8_0              | Qwen 3         |            32 |           32 | HIP         | hipBLASLt  |   226.1 |     6.4 |              33683 |
+| Qwen 3 235B-A22B UD-Q4_K_XL  | Qwen 3 MoE     |           235 |           22 | HIP         | hipBLASLt  |   117.1 |    12.9 |              99950 |
 | Shisa V2 70B i1-Q4_K_M       | Llama 3        |            70 |           70 | HIP rocWMMA |            |    94.7 |     4.5 |              41522 |
 | dots1 UD-Q4_K_XL             | dots1 MoE      |           142 |           14 | Vulkan      | fa=1 b=256 |    63.1 |    20.6 |              84077 |
 
@@ -93,6 +94,7 @@ You can reference the `[llama-cpp-bencher.py](llama-cpp-bencher.py)` directly fo
 | dots1 UD-Q4_K_XL             | dots1 MoE      |           142 |           14 | Vulkan    | fa=1 b=256 |    63.1 |    20.6 |              84077 |
 | Llama 4 Scout UD-Q4_K_XL     | Llama 4 MoE    |           109 |           17 | Vulkan    | fa=1 b=256 |   146.1 |    19.3 |              59917 |
 | Hunyuan-A13B UD-Q6_K_XL      | Hunyuan MoE    |            80 |           13 | Vulkan    | fa=1 b=256 |   223.9 |    17.1 |              68608 |
+| Qwen 3 235B-A22B UD-Q4_K_XL  | Qwen 3 MoE     |           235 |           22 | Vulkan    | fa=1       |   109.5 |    15.1 |             100446 |
 | Mistral Small 3.1 UD-Q4_K_XL | Mistral 3      |            24 |           24 | Vulkan    | fa=1       |   119.6 |    14.3 |              14540 |
 | Qwen 3 32B Q8_0              | Qwen 3         |            32 |           32 | Vulkan    | fa=1       |   101.8 |     6.4 |              33886 |
 | Shisa V2 70B i1-Q4_K_M       | Llama 3        |            70 |           70 | Vulkan    | fa=1       |    26.4 |     5.0 |              41456 |
