@@ -346,7 +346,7 @@ def sweep_table(df,mode):
         row=[b,str(hiplt),fa,bf]
         for v in vals:
             sub=grp[(grp['mode']==mode)&(grp['value']==v)]
-            row.append(sub['tokens_per_sec'].iloc[0] if not sub.empty else None)
+            row.append(sub['tokens_per_sec'].iloc[-1] if not sub.empty else None)
         rows.append(row)
 
     # determine the best value for each concurrency column
@@ -374,7 +374,7 @@ def write_summary(df,out):
     for (b,fa,bf,hiplt),grp in df.groupby(['build','fa','b','hipblaslt']):
         def _get(mode,val):
             sub=grp[(grp['mode']==mode)&(grp['value']==val)]
-            return sub['tokens_per_sec'].iloc[0] if not sub.empty else None
+            return sub['tokens_per_sec'].iloc[-1] if not sub.empty else None
         pp512=_get('pp',512)
         tg128=_get('tg',128)
         # Summarize memory based on the increase relative to the start of the
