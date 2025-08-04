@@ -514,7 +514,7 @@ def main():
     new_df=pd.DataFrame(records)
     df=pd.concat([existing_df,new_df],ignore_index=True)
     df.to_json(out/'results.jsonl',orient='records',lines=True)
-    if not new_df.empty:
+    if not new_df.empty or args.rerun:
         write_summary(df,out)
 
     run_end=dt.datetime.now(dt.timezone.utc)
