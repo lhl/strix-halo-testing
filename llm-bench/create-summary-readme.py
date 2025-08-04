@@ -107,7 +107,7 @@ MODELS = {
         "weights": 7,
         "active": 7,
         "pp": "vulkan",
-        "tg": "vulkan_fa",
+        "tg": "hip_hipblaslt_fa",
         "line": {
             "color": (0.2, 0.5, 0.9, 0.9),
             "lw": 1,
@@ -196,6 +196,10 @@ def get_best_performance_for_backend(df, backend_config, mode):
     elif backend_config == "hip_hipblaslt":
         mask = (df['build'].str.contains('hip', na=False)) & \
                (df['hipblaslt'] == '1')
+    elif backend_config == "hip_hipblaslt_fa":
+        mask = (df['build'].str.contains('hip', na=False)) & \
+               (df['hipblaslt'] == '1') & \
+               (df['fa'] == '')
     elif backend_config == "rocwmma":
         mask = (df['build'].str.contains('rocwmma', na=False))
     else:
@@ -244,6 +248,10 @@ def get_best_performance(df, model_info, mode):
     elif best_backend == "hip_hipblaslt":
         mask = (df['build'].str.contains('hip', na=False)) & \
                (df['hipblaslt'] == '1')
+    elif best_backend == "hip_hipblaslt_fa":
+        mask = (df['build'].str.contains('hip', na=False)) & \
+               (df['hipblaslt'] == '1') & \
+               (df['fa'] == '-fa 1')
     elif best_backend == "rocwmma":
         mask = (df['build'].str.contains('rocwmma', na=False))
     else:
