@@ -70,7 +70,7 @@ You can reference the `[llama-cpp-bencher.py](llama-cpp-bencher.py)` directly fo
 
 | Model Name                   | Architecture   |   Weights (B) |   Active (B) | Backend     | Flags      |   pp512 |   tg128 |   Memory (Max MiB) |
 |------------------------------|----------------|---------------|--------------|-------------|------------|---------|---------|--------------------|
-| Llama 2 7B Q4_0              | Llama 2        |             7 |            7 | Vulkan      |            |   998.0 |    46.5 |               4237 |
+| Llama 2 7B Q4_0              | Llama 2        |             7 |            7 | Vulkan      |            |  1230.0 |    48.3 |               4323 |
 | Llama 2 7B Q4_K_M            | Llama 2        |             7 |            7 | HIP         | hipBLASLt  |   906.1 |    40.8 |               4720 |
 | Shisa V2 8B i1-Q4_K_M        | Llama 3        |             8 |            8 | HIP         | hipBLASLt  |   878.2 |    37.2 |               5308 |
 | Qwen 3 30B-A3B UD-Q4_K_XL    | Qwen 3 MoE     |            30 |            3 | Vulkan      | fa=1       |   604.8 |    66.3 |              17527 |
@@ -89,7 +89,7 @@ You can reference the `[llama-cpp-bencher.py](llama-cpp-bencher.py)` directly fo
 |------------------------------|----------------|---------------|--------------|-----------|------------|---------|---------|--------------------|
 | Qwen 3 30B-A3B UD-Q4_K_XL    | Qwen 3 MoE     |            30 |            3 | Vulkan    | b=256      |   591.1 |    72.0 |              17377 |
 | Llama 2 7B Q4_K_M            | Llama 2        |             7 |            7 | Vulkan    | fa=1       |   620.9 |    47.9 |               4463 |
-| Llama 2 7B Q4_0              | Llama 2        |             7 |            7 | Vulkan    | fa=1       |  1014.1 |    45.8 |               4219 |
+| Llama 2 7B Q4_0              | Llama 2        |             7 |            7 | Vulkan    | fa=1       |  1260.6 |    47.7 |               4281 |
 | Shisa V2 8B i1-Q4_K_M        | Llama 3        |             8 |            8 | Vulkan    | fa=1       |   614.2 |    42.0 |               5333 |
 | dots1 UD-Q4_K_XL             | dots1 MoE      |           142 |           14 | Vulkan    | fa=1 b=256 |    63.1 |    20.6 |              84077 |
 | Llama 4 Scout UD-Q4_K_XL     | Llama 4 MoE    |           109 |           17 | Vulkan    | fa=1 b=256 |   146.1 |    19.3 |              59917 |
