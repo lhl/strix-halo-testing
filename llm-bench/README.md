@@ -63,6 +63,25 @@ You can reference the `[llama-cpp-bencher.py](llama-cpp-bencher.py)` directly fo
 - As mentioned, in my testing the AMDVLK Vulkan implementation seems to always be faster, although you can use `AMD_VULKAN_ICD=RADV` if necessary to use the Mesa RADV Vulkan if you have both installed
 - Be sure to disable mmap, eg `--mmap 0` for `llama-bench` or `--no-mmap` for `llama-cli` or `llama-server` otherwise you may incur extreme model loading speed penalties with the ROCm backend if exceeding 50% of the available system memory
 
+#### rocWMMA
+If you are using ROCm 6.5+ then llama.cppw/ rocWMMA will likely not work out of the box:
+
+First make sure you have the latest rocWMMA headers installed:
+```
+./build-rocwmma.sh
+```
+
+Then you can apply patches:
+```
+./apply-rocwmma-fix.sh ~/llama.cpp/llama.cpp-rocwmma
+```
+
+Now you should be able to compile as normal:
+```
+cmake -S . -B build -DGGML_HIP=ON -DAMDGPU_TARGETS=gfx1151 -DGGML_HIP_ROCWMMA_FATTN=ON  && cmake --build build --config Release -j32
+```
+
+
 ## Results
 
 ### Prompt Processing (pp) Performance
