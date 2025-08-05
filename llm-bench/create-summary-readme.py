@@ -184,7 +184,7 @@ def load_model_results(model_key):
         print(f"Error loading results for {model_key}: {e}")
         return None
 
-def get_best_performance_for_backend(df, backend_config, mode):
+def get_best_performance_for_backend(df, backend_config, mode, token_limit=None):
     """Get performance for a specific backend configuration and mode."""
     if df is None or df.empty:
         return None, None
@@ -230,6 +230,12 @@ def get_best_performance_for_backend(df, backend_config, mode):
     if filtered_df.empty:
         return None, None
     
+    # Apply token limit if specified
+    if token_limit is not None:
+        filtered_df = filtered_df[filtered_df['value'] <= token_limit]
+        if filtered_df.empty:
+            return None, None
+    
     # Get the performance values and memory info
     performance = filtered_df.groupby('value')['tokens_per_sec'].max()
     
@@ -240,7 +246,7 @@ def get_best_performance_for_backend(df, backend_config, mode):
     
     return performance, memory_by_tokens
 
-def get_best_performance(df, model_info, mode):
+def get_best_performance(df, model_info, mode, token_limit=None):
     """Get the best performance for a model in the given mode."""
     if df is None or df.empty:
         return None, None
@@ -289,6 +295,12 @@ def get_best_performance(df, model_info, mode):
     if filtered_df.empty:
         return None, None
     
+    # Apply token limit if specified
+    if token_limit is not None:
+        filtered_df = filtered_df[filtered_df['value'] <= token_limit]
+        if filtered_df.empty:
+            return None, None
+    
     # Get the performance values and memory info
     performance = filtered_df.groupby('value')['tokens_per_sec'].max()
     max_memory = filtered_df[['vram_peak_mib', 'gtt_peak_mib']].sum(axis=1).max()
@@ -326,7 +338,7 @@ def get_marker_for_backend(backend_config):
     else:
         return "o"  # Default to circle
 
-def create_mode_table(all_results, mode, sort_by='weights', sort_descending=True):
+def create_mode_table(all_results, mode, sort_by='weights', sort_descending=True, token_limit=None):
     """Create a summary table for a specific mode (pp or tg) using optimal backend for that mode.
     
     Args:
@@ -334,6 +346,7 @@ def create_mode_table(all_results, mode, sort_by='weights', sort_descending=True
         mode: 'pp' or 'tg' 
         sort_by: Column to sort by - 'weights', 'active', 'pp512', 'tg128', 'memory', or 'name'
         sort_descending: Whether to sort in descending order (True) or ascending (False)
+        token_limit: Maximum token count to include in results
     """
     rows = []
     
@@ -346,7 +359,7 @@ def create_mode_table(all_results, mode, sort_by='weights', sort_descending=True
             continue
             
         # Get performance for the mode using its optimal backend
-        mode_performance, mode_memory = get_best_performance(df, model_info, mode)
+        mode_performance, mode_memory = get_best_performance(df, model_info, mode, token_limit)
         
         if mode_performance is None:
             continue
@@ -359,8 +372,8 @@ def create_mode_table(all_results, mode, sort_by='weights', sort_descending=True
         backend_config = model_info[mode]
         
         # Get both PP and TG performance from the same backend
-        pp_performance_same_backend, pp_memory_by_tokens = get_best_performance_for_backend(df, backend_config, 'pp')
-        tg_performance_same_backend, tg_memory_by_tokens = get_best_performance_for_backend(df, backend_config, 'tg')
+        pp_performance_same_backend, pp_memory_by_tokens = get_best_performance_for_backend(df, backend_config, 'pp', token_limit)
+        tg_performance_same_backend, tg_memory_by_tokens = get_best_performance_for_backend(df, backend_config, 'tg', token_limit)
         
         # Use memory from the specific token lengths we're reporting (512 for PP, 128 for TG)
         pp512_memory = pp_memory_by_tokens.get(512, None) if pp_memory_by_tokens is not None else None
@@ -414,7 +427,7 @@ def create_mode_table(all_results, mode, sort_by='weights', sort_descending=True
     
     return rows
 
-def create_summary_plot(all_results, mode, output_path):
+def create_summary_plot(all_results, mode, output_path, token_limit=None):
     """Create a summary plot for all models."""
     fig, ax = plt.subplots(figsize=(12, 8))
     
@@ -426,7 +439,7 @@ def create_summary_plot(all_results, mode, output_path):
         if df is None:
             continue
             
-        performance, _ = get_best_performance(df, model_info, mode)
+        performance, _ = get_best_performance(df, model_info, mode, token_limit)
         if performance is None or performance.empty:
             continue
         
@@ -443,7 +456,8 @@ def create_summary_plot(all_results, mode, output_path):
         )
     
     if ax.lines:
-        ax.set_title(f"Model Performance Comparison - {mode.upper()}")
+        title_suffix = f" (≤{token_limit} tokens)" if token_limit else ""
+        ax.set_title(f"Model Performance Comparison - {mode.upper()}{title_suffix}")
         ax.set_xlabel("Tokens")
         ax.set_ylabel("Tokens per Second")
         ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left")
@@ -455,6 +469,9 @@ def create_summary_plot(all_results, mode, output_path):
 
 def generate_readme():
     """Generate the README.md file with results."""
+    
+    # TOKEN LIMIT CONFIGURATION - Set to None for no limit, or specify max tokens (e.g., 4096)
+    TOKEN_LIMIT = 4096  # Limit results to 4096 tokens for charts and tables
     
     # SORTING CONFIGURATION - Modify these to change table sorting
     # Available options for SORT_BY:
@@ -477,12 +494,12 @@ def generate_readme():
         all_results[model_key] = load_model_results(model_key)
     
     # Create separate tables for PP and TG modes with configurable sorting
-    pp_rows = create_mode_table(all_results, 'pp', PP_SORT_BY, PP_SORT_DESCENDING)
-    tg_rows = create_mode_table(all_results, 'tg', TG_SORT_BY, TG_SORT_DESCENDING)
+    pp_rows = create_mode_table(all_results, 'pp', PP_SORT_BY, PP_SORT_DESCENDING, TOKEN_LIMIT)
+    tg_rows = create_mode_table(all_results, 'tg', TG_SORT_BY, TG_SORT_DESCENDING, TOKEN_LIMIT)
     
     # Create plots
-    create_summary_plot(all_results, 'pp', 'summary-results-pp.png')
-    create_summary_plot(all_results, 'tg', 'summary-results-tg.png')
+    create_summary_plot(all_results, 'pp', 'summary-results-pp.png', TOKEN_LIMIT)
+    create_summary_plot(all_results, 'tg', 'summary-results-tg.png', TOKEN_LIMIT)
     
     # Read existing README.md if it exists
     readme_path = Path('README.md')
