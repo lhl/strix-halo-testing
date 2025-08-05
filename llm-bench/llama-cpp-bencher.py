@@ -322,9 +322,11 @@ def comb_plot(df, metric, label, mode, out):
     for (build, fa, b, hiplt), grp in subset.groupby(["build", "fa", "b", "hipblaslt"]):
         key = _render_key(build, fa, b, hiplt)
         style = RENDER.get(key, {})
+        # Get latest result for each value in this configuration group
+        latest_grp = grp.groupby('value').tail(1).sort_values('value')
         ax.plot(
-            grp["value"],
-            grp[metric],
+            latest_grp["value"],
+            latest_grp[metric],
             label=_make_label(build, fa, b, hiplt),
             **style,
         )
