@@ -161,7 +161,7 @@ MODELS = {
         "pp": "hip_hipblaslt",
         "tg": "vulkan_fa",
         "line": {
-            "color": (0.9, 0.6, 0.3, 0.9),
+            "color": (1.0, 0.5, 0.3, 0.9),
             "lw": 1,
             "ls": "-",
         },
