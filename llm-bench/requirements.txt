@@ -2,3 +2,4 @@ matplotlib
 pandas
 tabulate
 loguru
+ninja
