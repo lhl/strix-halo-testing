@@ -68,34 +68,35 @@ You can reference the `[llama-cpp-bencher.py](llama-cpp-bencher.py)` directly fo
 ### Prompt Processing (pp) Performance
 ![PP Performance](summary-results-pp.png)
 
-| Model Name                   | Architecture   |   Weights (B) |   Active (B) | Backend     | Flags      |   pp512 |   tg128 |   Memory (Max MiB) |
-|------------------------------|----------------|---------------|--------------|-------------|------------|---------|---------|--------------------|
-| Llama 2 7B Q4_0              | Llama 2        |             7 |            7 | Vulkan      |            |  1230.0 |    48.3 |               4323 |
-| Llama 2 7B Q4_K_M            | Llama 2        |             7 |            7 | HIP         | hipBLASLt  |   906.1 |    40.8 |               4720 |
-| Shisa V2 8B i1-Q4_K_M        | Llama 3        |             8 |            8 | HIP         | hipBLASLt  |   878.2 |    37.2 |               5308 |
-| Qwen 3 30B-A3B UD-Q4_K_XL    | Qwen 3 MoE     |            30 |            3 | Vulkan      | fa=1       |   604.8 |    66.3 |              17527 |
-| Mistral Small 3.1 UD-Q4_K_XL | Mistral 3      |            24 |           24 | HIP         | hipBLASLt  |   316.9 |    13.6 |              14638 |
-| Hunyuan-A13B UD-Q6_K_XL      | Hunyuan MoE    |            80 |           13 | Vulkan      | fa=1       |   270.5 |    17.1 |              68785 |
-| Llama 4 Scout UD-Q4_K_XL     | Llama 4 MoE    |           109 |           17 | HIP         | hipBLASLt  |   264.1 |    17.2 |              59720 |
-| Qwen 3 32B Q8_0              | Qwen 3         |            32 |           32 | HIP         | hipBLASLt  |   226.1 |     6.4 |              33683 |
-| Qwen 3 235B-A22B UD-Q4_K_XL  | Qwen 3 MoE     |           235 |           22 | HIP         | hipBLASLt  |   117.1 |    12.9 |              99950 |
-| Shisa V2 70B i1-Q4_K_M       | Llama 3        |            70 |           70 | HIP rocWMMA |            |    94.7 |     4.5 |              41522 |
-| dots1 UD-Q4_K_XL             | dots1 MoE      |           142 |           14 | Vulkan      | fa=1 b=256 |    63.1 |    20.6 |              84077 |
+| Model Name                   | Architecture   |   Weights (B) |   Active (B) | Backend     | Flags          |   pp512 |   tg128 |   Memory (Max MiB) |
+|------------------------------|----------------|---------------|--------------|-------------|----------------|---------|---------|--------------------|
+| dots1 UD-Q4_K_XL             | dots1 MoE      |           142 |           14 | Vulkan      | fa=1 b=256     |   nan   |   nan   |                161 |
+| Llama 4 Scout UD-Q4_K_XL     | Llama 4 MoE    |           109 |           17 | HIP         | hipBLASLt      |   nan   |   nan   |                161 |
+| Hunyuan-A13B UD-Q6_K_XL      | Hunyuan MoE    |            80 |           13 | Vulkan      | fa=1           |   nan   |   nan   |                161 |
+| Llama 2 7B Q4_0              | Llama 2        |             7 |            7 | Vulkan      |                |  1230.0 |    48.3 |               4323 |
+| Llama 2 7B Q4_K_M            | Llama 2        |             7 |            7 | HIP rocWMMA | fa=1 hipBLASLt |  1083.0 |    41.3 |               4720 |
+| Shisa V2 8B i1-Q4_K_M        | Llama 3        |             8 |            8 | HIP         | hipBLASLt      |   878.2 |    37.2 |               5308 |
+| Mistral Small 3.1 UD-Q4_K_XL | Mistral 3      |            24 |           24 | HIP         | hipBLASLt      |   316.9 |    13.6 |              14638 |
+| Gemma 3 27B UD-Q4_K_XL       | Gemma 3        |            27 |           27 | HIP         | hipBLASLt      |   302.2 |    10.7 |              17542 |
+| Qwen 3 32B Q8_0              | Qwen 3         |            32 |           32 | HIP         | hipBLASLt      |   226.1 |     6.4 |              33683 |
+| Qwen 3 235B-A22B UD-Q4_K_XL  | Qwen 3 MoE     |           235 |           22 | HIP         | hipBLASLt      |   117.1 |    12.9 |              99950 |
+| Shisa V2 70B i1-Q4_K_M       | Llama 3        |            70 |           70 | HIP rocWMMA | hipBLASLt      |    94.7 |     4.5 |              41522 |
 
 ### Text Generation (tg) Performance
 ![TG Performance](summary-results-tg.png)
 
 | Model Name                   | Architecture   |   Weights (B) |   Active (B) | Backend   | Flags          |   pp512 |   tg128 |   Memory (Max MiB) |
 |------------------------------|----------------|---------------|--------------|-----------|----------------|---------|---------|--------------------|
-| Qwen 3 30B-A3B UD-Q4_K_XL    | Qwen 3 MoE     |            30 |            3 | Vulkan    | b=256          |   591.1 |    72.0 |              17377 |
+| dots1 UD-Q4_K_XL             | dots1 MoE      |           142 |           14 | Vulkan    | fa=1 b=256     |   nan   |   nan   |                161 |
+| Llama 4 Scout UD-Q4_K_XL     | Llama 4 MoE    |           109 |           17 | Vulkan    | fa=1 b=256     |   nan   |   nan   |                161 |
+| Hunyuan-A13B UD-Q6_K_XL      | Hunyuan MoE    |            80 |           13 | Vulkan    | fa=1 b=256     |   nan   |   nan   |                161 |
+| Qwen 3 30B-A3B UD-Q4_K_XL    | Qwen 3 MoE     |            30 |            3 | Vulkan    | b=256          |   645.5 |    78.0 |              17377 |
 | Llama 2 7B Q4_0              | Llama 2        |             7 |            7 | HIP       | fa=1 hipBLASLt |   975.3 |    49.4 |               4429 |
-| Llama 2 7B Q4_K_M            | Llama 2        |             7 |            7 | Vulkan    | fa=1           |   620.9 |    47.9 |               4463 |
+| Llama 2 7B Q4_K_M            | Llama 2        |             7 |            7 | Vulkan    | fa=1           |   787.6 |    48.7 |               4463 |
 | Shisa V2 8B i1-Q4_K_M        | Llama 3        |             8 |            8 | Vulkan    | fa=1           |   614.2 |    42.0 |               5333 |
-| dots1 UD-Q4_K_XL             | dots1 MoE      |           142 |           14 | Vulkan    | fa=1 b=256     |    63.1 |    20.6 |              84077 |
-| Llama 4 Scout UD-Q4_K_XL     | Llama 4 MoE    |           109 |           17 | Vulkan    | fa=1 b=256     |   146.1 |    19.3 |              59917 |
-| Hunyuan-A13B UD-Q6_K_XL      | Hunyuan MoE    |            80 |           13 | Vulkan    | fa=1 b=256     |   223.9 |    17.1 |              68608 |
 | Qwen 3 235B-A22B UD-Q4_K_XL  | Qwen 3 MoE     |           235 |           22 | Vulkan    | fa=1           |   109.5 |    15.1 |             100446 |
 | Mistral Small 3.1 UD-Q4_K_XL | Mistral 3      |            24 |           24 | Vulkan    | fa=1           |   119.6 |    14.3 |              14540 |
+| Gemma 3 27B UD-Q4_K_XL       | Gemma 3        |            27 |           27 | Vulkan    | fa=1           |   114.7 |    11.8 |              18123 |
 | Qwen 3 32B Q8_0              | Qwen 3         |            32 |           32 | Vulkan    | fa=1           |   101.8 |     6.4 |              33886 |
 | Shisa V2 70B i1-Q4_K_M       | Llama 3        |            70 |           70 | Vulkan    | fa=1           |    26.4 |     5.0 |              41456 |
 

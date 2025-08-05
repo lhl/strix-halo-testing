@@ -67,7 +67,7 @@ MODELS = {
         "arch": "Qwen 3 MoE",
         "weights": 30,
         "active": 3,
-        "pp": "vulkan_fa",
+        "pp": "rocmwmma_hipblaslt_fa",
         "tg": "vulkan_b=256",
         "line": {
             "color": (0.5, 0.5, 0.9, 0.9),
@@ -119,7 +119,7 @@ MODELS = {
         "arch": "Llama 2",
         "weights": 7,
         "active": 7,
-        "pp": "hip_hipblaslt",
+        "pp": "rocwmma_hipblaslt_fa",
         "tg": "vulkan_fa",
         "line": {
             "color": (0.1, 0.4, 1.0, 0.9),
@@ -145,10 +145,23 @@ MODELS = {
         "arch": "Llama 3",
         "weights": 70,
         "active": 70,
-        "pp": "rocwmma",
+        "pp": "rocwmma_hipblaslt",
         "tg": "vulkan_fa",
         "line": {
             "color": (0.7, 0.3, 0.7, 0.9),
+            "lw": 1,
+            "ls": "-",
+        },
+    },
+    "gemma-3-27b-it-UD-Q4_K_XL": {
+        "name": "Gemma 3 27B UD-Q4_K_XL",
+        "arch": "Gemma 3",
+        "weights": 27,
+        "active": 27,
+        "pp": "hip_hipblaslt",
+        "tg": "vulkan_fa",
+        "line": {
+            "color": (0.9, 0.6, 0.3, 0.9),
             "lw": 1,
             "ls": "-",
         },
@@ -202,6 +215,13 @@ def get_best_performance_for_backend(df, backend_config, mode):
                (df['fa'] == '')
     elif backend_config == "rocwmma":
         mask = (df['build'].str.contains('rocwmma', na=False))
+    elif backend_config == "rocwmma_hipblaslt":
+        mask = (df['build'].str.contains('rocwmma', na=False)) & \
+               (df['hipblaslt'] == '1')
+    elif backend_config == "rocwmma_hipblaslt_fa":
+        mask = (df['build'].str.contains('rocwmma', na=False)) & \
+               (df['hipblaslt'] == '1') & \
+               (df['fa'] == '-fa 1')
     else:
         mask = df['build'].str.contains(backend_config, na=False)
     
@@ -254,6 +274,13 @@ def get_best_performance(df, model_info, mode):
                (df['fa'] == '-fa 1')
     elif best_backend == "rocwmma":
         mask = (df['build'].str.contains('rocwmma', na=False))
+    elif best_backend == "rocwmma_hipblaslt":
+        mask = (df['build'].str.contains('rocwmma', na=False)) & \
+               (df['hipblaslt'] == '1')
+    elif best_backend == "rocwmma_hipblaslt_fa":
+        mask = (df['build'].str.contains('rocwmma', na=False)) & \
+               (df['hipblaslt'] == '1') & \
+               (df['fa'] == '-fa 1')
     else:
         mask = df['build'].str.contains(best_backend, na=False)
     
