@@ -179,6 +179,19 @@ MODELS = {
             "ls": ":",
         },
     },
+    "gpt-oss-120b-F16": {
+        "name": "OpenAI gpt-oss 120B MXFP4",
+        "arch": "gpt-oss",
+        "weights": 21,
+        "active": 3.6,
+        "pp": "vulkan",
+        "tg": "vulkan_b=256",
+        "line": {
+            "color": (0.0, 0.0, 0.0, 0.9),
+            "lw": 1,
+            "ls": ":",
+        },
+    },
 }
 
 def load_model_results(model_key):
