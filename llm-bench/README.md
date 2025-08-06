@@ -91,6 +91,7 @@ cmake -S . -B build -DGGML_HIP=ON -DAMDGPU_TARGETS=gfx1151 -DGGML_HIP_ROCWMMA_FA
 |------------------------------|----------------|---------------|--------------|-------------|----------------|---------|---------|--------------------|
 | Hunyuan-A13B UD-Q6_K_XL      | Hunyuan MoE    |            80 |           13 | Vulkan      | fa=1           |   nan   |   nan   |                161 |
 | Llama 2 7B Q4_0              | Llama 2        |             7 |            7 | Vulkan      |                |  1230.0 |    48.3 |               4323 |
+| OpenAI gpt-oss 20B MXFP4     | gpt-oss        |            21 |            4 | HIP         | hipBLASLt      |  1196.2 |    46.9 |              12958 |
 | Llama 2 7B Q4_K_M            | Llama 2        |             7 |            7 | HIP rocWMMA | fa=1 hipBLASLt |  1083.0 |    41.3 |               4720 |
 | Shisa V2 8B i1-Q4_K_M        | Llama 3        |             8 |            8 | HIP         | hipBLASLt      |   878.2 |    37.2 |               5308 |
 | Mistral Small 3.1 UD-Q4_K_XL | Mistral 3      |            24 |           24 | HIP         | hipBLASLt      |   316.9 |    13.6 |              14638 |
@@ -110,6 +111,7 @@ cmake -S . -B build -DGGML_HIP=ON -DAMDGPU_TARGETS=gfx1151 -DGGML_HIP_ROCWMMA_FA
 | Qwen 3 30B-A3B UD-Q4_K_XL    | Qwen 3 MoE     |            30 |            3 | Vulkan    | b=256          |   645.5 |    78.0 |              17377 |
 | Llama 2 7B Q4_0              | Llama 2        |             7 |            7 | HIP       | fa=1 hipBLASLt |   975.3 |    49.4 |               4429 |
 | Llama 2 7B Q4_K_M            | Llama 2        |             7 |            7 | Vulkan    | fa=1           |   787.6 |    48.7 |               4463 |
+| OpenAI gpt-oss 20B MXFP4     | gpt-oss        |            21 |            4 | Vulkan    | b=256          |   943.1 |    47.0 |              14684 |
 | Shisa V2 8B i1-Q4_K_M        | Llama 3        |             8 |            8 | Vulkan    | fa=1           |   614.2 |    42.0 |               5333 |
 | dots1 UD-Q4_K_XL             | dots1 MoE      |           142 |           14 | Vulkan    | fa=1 b=256     |    63.1 |    20.6 |              84077 |
 | Llama 4 Scout UD-Q4_K_XL     | Llama 4 MoE    |           109 |           17 | Vulkan    | fa=1 b=256     |   157.8 |    19.4 |              59917 |
