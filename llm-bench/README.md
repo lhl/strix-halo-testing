@@ -95,7 +95,7 @@ cmake -S . -B build -DGGML_HIP=ON -DAMDGPU_TARGETS=gfx1151 -DGGML_HIP_ROCWMMA_FA
 | Llama 2 7B Q4_K_M            | Llama 2        |             7 |            7 | HIP rocWMMA | fa=1 hipBLASLt |  1083.0 |    41.3 |               4720 |
 | Shisa V2 8B i1-Q4_K_M        | Llama 3        |             8 |            8 | HIP         | hipBLASLt      |   878.2 |    37.2 |               5308 |
 | Qwen 3 30B-A3B UD-Q4_K_XL    | Qwen 3 MoE     |            30 |            3 | HIP rocWMMA | fa=1 hipBLASLt |   669.4 |    58.5 |              17533 |
-| OpenAI gpt-oss 120B MXFP4    | gpt-oss        |            21 |            4 | Vulkan      |                |   430.6 |    33.7 |              64157 |
+| OpenAI gpt-oss 120B MXFP4    | gpt-oss        |           117 |            5 | Vulkan      |                |   430.6 |    33.7 |              64157 |
 | Mistral Small 3.1 UD-Q4_K_XL | Mistral 3      |            24 |           24 | HIP         | hipBLASLt      |   316.9 |    13.6 |              14638 |
 | Gemma 3 27B UD-Q4_K_XL       | Gemma 3        |            27 |           27 | HIP         | hipBLASLt      |   302.2 |    10.7 |              17542 |
 | Llama 4 Scout UD-Q4_K_XL     | Llama 4 MoE    |           109 |           17 | HIP         | hipBLASLt      |   277.4 |    17.6 |              59720 |
@@ -115,7 +115,7 @@ cmake -S . -B build -DGGML_HIP=ON -DAMDGPU_TARGETS=gfx1151 -DGGML_HIP_ROCWMMA_FA
 | Llama 2 7B Q4_K_M            | Llama 2        |             7 |            7 | Vulkan    | fa=1           |   787.6 |    48.7 |               4463 |
 | OpenAI gpt-oss 20B MXFP4     | gpt-oss        |            21 |            4 | Vulkan    | b=256          |   943.1 |    47.0 |              14684 |
 | Shisa V2 8B i1-Q4_K_M        | Llama 3        |             8 |            8 | Vulkan    | fa=1           |   614.2 |    42.0 |               5333 |
-| OpenAI gpt-oss 120B MXFP4    | gpt-oss        |            21 |            4 | Vulkan    | b=256          |   386.8 |    33.7 |              63945 |
+| OpenAI gpt-oss 120B MXFP4    | gpt-oss        |           117 |            5 | Vulkan    | b=256          |   386.8 |    33.7 |              63945 |
 | dots1 UD-Q4_K_XL             | dots1 MoE      |           142 |           14 | Vulkan    | fa=1 b=256     |    63.1 |    20.6 |              84077 |
 | Llama 4 Scout UD-Q4_K_XL     | Llama 4 MoE    |           109 |           17 | Vulkan    | fa=1 b=256     |   157.8 |    19.4 |              59917 |
 | Qwen 3 235B-A22B UD-Q4_K_XL  | Qwen 3 MoE     |           235 |           22 | Vulkan    | fa=1           |   109.5 |    15.1 |             100446 |

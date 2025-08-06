@@ -182,8 +182,8 @@ MODELS = {
     "gpt-oss-120b-F16": {
         "name": "OpenAI gpt-oss 120B MXFP4",
         "arch": "gpt-oss",
-        "weights": 21,
-        "active": 3.6,
+        "weights": 117,
+        "active": 5.1,
         "pp": "vulkan",
         "tg": "vulkan_b=256",
         "line": {
