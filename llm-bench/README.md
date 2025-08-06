@@ -94,6 +94,7 @@ cmake -S . -B build -DGGML_HIP=ON -DAMDGPU_TARGETS=gfx1151 -DGGML_HIP_ROCWMMA_FA
 | OpenAI gpt-oss 20B MXFP4     | gpt-oss        |            21 |            4 | HIP         | hipBLASLt      |  1196.2 |    46.9 |              12958 |
 | Llama 2 7B Q4_K_M            | Llama 2        |             7 |            7 | HIP rocWMMA | fa=1 hipBLASLt |  1083.0 |    41.3 |               4720 |
 | Shisa V2 8B i1-Q4_K_M        | Llama 3        |             8 |            8 | HIP         | hipBLASLt      |   878.2 |    37.2 |               5308 |
+| Qwen 3 30B-A3B UD-Q4_K_XL    | Qwen 3 MoE     |            30 |            3 | HIP rocWMMA | fa=1 hipBLASLt |   669.4 |    58.5 |              17533 |
 | Mistral Small 3.1 UD-Q4_K_XL | Mistral 3      |            24 |           24 | HIP         | hipBLASLt      |   316.9 |    13.6 |              14638 |
 | Gemma 3 27B UD-Q4_K_XL       | Gemma 3        |            27 |           27 | HIP         | hipBLASLt      |   302.2 |    10.7 |              17542 |
 | Llama 4 Scout UD-Q4_K_XL     | Llama 4 MoE    |           109 |           17 | HIP         | hipBLASLt      |   277.4 |    17.6 |              59720 |

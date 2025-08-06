@@ -67,7 +67,7 @@ MODELS = {
         "arch": "Qwen 3 MoE",
         "weights": 30,
         "active": 3,
-        "pp": "rocmwmma_hipblaslt_fa",
+        "pp": "rocwmma_hipblaslt_fa",
         "tg": "vulkan_b=256",
         "line": {
             "color": (0.5, 0.5, 0.9, 0.9),
