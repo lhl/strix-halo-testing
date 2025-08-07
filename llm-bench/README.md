@@ -97,13 +97,13 @@ cmake -S . -B build -DGGML_HIP=ON -DAMDGPU_TARGETS=gfx1151 -DGGML_HIP_ROCWMMA_FA
 | Shisa V2 8B i1-Q4_K_M        | Llama 3        |             8 |            8 | HIP         | hipBLASLt      |   878.2 |    37.2 |               5308 |
 | Qwen 3 30B-A3B UD-Q4_K_XL    | Qwen 3 MoE     |            30 |            3 | HIP rocWMMA | fa=1 hipBLASLt |   669.4 |    58.5 |              17533 |
 | OpenAI gpt-oss 120B MXFP4    | gpt-oss        |           117 |            5 | Vulkan      |                |   430.6 |    33.7 |              64157 |
-| Mistral Small 3.1 UD-Q4_K_XL | Mistral 3      |            24 |           24 | HIP         | hipBLASLt      |   316.9 |    13.6 |              14638 |
+| Mistral Small 3.1 UD-Q4_K_XL | Mistral 3      |            24 |           24 | HIP         | hipBLASLt      |   335.5 |    13.9 |              14653 |
 | Gemma 3 27B UD-Q4_K_XL       | Gemma 3        |            27 |           27 | HIP         | hipBLASLt      |   302.2 |    10.7 |              17542 |
 | Hunyuan-A13B UD-Q6_K_XL      | Hunyuan MoE    |            80 |           13 | Vulkan      | fa=1           |   296.6 |    18.1 |              69179 |
 | Llama 4 Scout UD-Q4_K_XL     | Llama 4 MoE    |           109 |           17 | HIP         | hipBLASLt      |   277.4 |    17.6 |              59720 |
 | Qwen 3 32B Q8_0              | Qwen 3         |            32 |           32 | HIP         | hipBLASLt      |   226.1 |     6.4 |              33683 |
 | dots1 UD-Q4_K_XL             | dots1 MoE      |           142 |           14 | Vulkan      | fa=1           |   182.0 |    22.1 |              84082 |
-| Qwen 3 235B-A22B UD-Q4_K_XL  | Qwen 3 MoE     |           235 |           22 | HIP         | hipBLASLt      |   117.1 |    12.9 |              99950 |
+| Qwen 3 235B-A22B UD-Q3_K_XL  | Qwen 3 MoE     |           235 |           22 | HIP         | hipBLASLt      |   117.1 |    12.9 |              99950 |
 | Shisa V2 70B i1-Q4_K_M       | Llama 3        |            70 |           70 | HIP rocWMMA | hipBLASLt      |    94.7 |     4.5 |              41522 |
 
 ### Text Generation (tg) Performance
@@ -120,8 +120,8 @@ cmake -S . -B build -DGGML_HIP=ON -DAMDGPU_TARGETS=gfx1151 -DGGML_HIP_ROCWMMA_FA
 | dots1 UD-Q4_K_XL             | dots1 MoE      |           142 |           14 | Vulkan    | fa=1 b=256     |   139.1 |    22.1 |              83917 |
 | Llama 4 Scout UD-Q4_K_XL     | Llama 4 MoE    |           109 |           17 | Vulkan    | fa=1 b=256     |   157.8 |    19.4 |              59917 |
 | Hunyuan-A13B UD-Q6_K_XL      | Hunyuan MoE    |            80 |           13 | Vulkan    | fa=1 b=256     |   244.8 |    18.1 |              69006 |
-| Qwen 3 235B-A22B UD-Q4_K_XL  | Qwen 3 MoE     |           235 |           22 | Vulkan    | fa=1           |   109.5 |    15.1 |             100446 |
-| Mistral Small 3.1 UD-Q4_K_XL | Mistral 3      |            24 |           24 | Vulkan    | fa=1           |   119.6 |    14.3 |              14540 |
+| Qwen 3 235B-A22B UD-Q3_K_XL  | Qwen 3 MoE     |           235 |           22 | Vulkan    | fa=1           |   109.5 |    15.1 |             100446 |
+| Mistral Small 3.1 UD-Q4_K_XL | Mistral 3      |            24 |           24 | Vulkan    | fa=1           |   203.3 |    14.4 |              14540 |
 | Gemma 3 27B UD-Q4_K_XL       | Gemma 3        |            27 |           27 | Vulkan    | fa=1           |   114.7 |    11.8 |              18123 |
 | Qwen 3 32B Q8_0              | Qwen 3         |            32 |           32 | Vulkan    | fa=1           |   101.8 |     6.4 |              33886 |
 | Shisa V2 70B i1-Q4_K_M       | Llama 3        |            70 |           70 | Vulkan    | fa=1           |    26.4 |     5.0 |              41456 |
