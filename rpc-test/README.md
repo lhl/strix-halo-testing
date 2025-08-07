@@ -29,7 +29,86 @@ The rpc-server takes minimal memory, so you can run multiple servers on differen
 
 The `-c` is important - it will cache tensors so they don't have to be constantly transferred every time.
 
-## RPC Tests
+## RPC Scaling 
+
+Here's a simple test that shows how adding more nodes affects inference speed. Prompt processing mostly takes a one time hit, but token generation speed decreases pretty linearly with additional nodes.
+
+In general, you should use the least number of nodes as possible (including avoiding RPC entirely when possible).
+
+### 1
+```
+❯ time build/bin/llama-bench -m /models/gguf/gpt-oss-120b-F16.gguf                                                                         (base)
+ggml_vulkan: Found 1 Vulkan devices:
+ggml_vulkan: 0 = Radeon 8060S Graphics (AMD open-source driver) | uma: 1 | fp16: 1 | bf16: 0 | warp size: 64 | shared memory: 32768 | int dot: 1 | matrix cores: KHR_coopmat
+| model                          |       size |     params | backend    | ngl |            test |                  t/s |
+| ------------------------------ | ---------: | ---------: | ---------- | --: | --------------: | -------------------: |
+| gpt-oss ?B F16                 |  60.87 GiB |   116.83 B | Vulkan,RPC |  99 |           pp512 |        404.67 ± 3.65 |
+| gpt-oss ?B F16                 |  60.87 GiB |   116.83 B | Vulkan,RPC |  99 |           tg128 |         33.50 ± 0.03 |
+
+build: 9515c613 (6097)
+
+________________________________________________________
+Executed in   53.52 secs    fish           external
+   usr time   13.05 secs    0.39 millis   13.05 secs
+   sys time    8.93 secs    1.32 millis    8.92 secs
+```
+
+### 2 
+```
+❯ time build/bin/llama-bench --rpc 192.168.128.12:50053 -m /models/gguf/gpt-oss-120b-F16.gguf                                              (base)
+ggml_vulkan: Found 1 Vulkan devices:
+ggml_vulkan: 0 = Radeon 8060S Graphics (AMD open-source driver) | uma: 1 | fp16: 1 | bf16: 0 | warp size: 64 | shared memory: 32768 | int dot: 1 | matrix cores: KHR_coopmat
+| model                          |       size |     params | backend    | ngl |            test |                  t/s |
+| ------------------------------ | ---------: | ---------: | ---------- | --: | --------------: | -------------------: |
+| gpt-oss ?B F16                 |  60.87 GiB |   116.83 B | Vulkan,RPC |  99 |           pp512 |        374.82 ± 3.68 |
+| gpt-oss ?B F16                 |  60.87 GiB |   116.83 B | Vulkan,RPC |  99 |           tg128 |         28.87 ± 0.11 |
+
+build: 9515c613 (6097)
+
+________________________________________________________
+Executed in  102.58 secs    fish           external
+   usr time   51.32 secs  804.00 micros   51.32 secs
+   sys time    5.29 secs  528.00 micros    5.29 secs
+```
+
+### 3
+```
+❯ time build/bin/llama-bench --rpc 192.168.128.12:50053,192.168.128.13:50053 -m /models/gguf/gpt-oss-120b-F16.gguf                         (base)
+ggml_vulkan: Found 1 Vulkan devices:
+ggml_vulkan: 0 = Radeon 8060S Graphics (AMD open-source driver) | uma: 1 | fp16: 1 | bf16: 0 | warp size: 64 | shared memory: 32768 | int dot: 1 | matrix cores: KHR_coopmat
+| model                          |       size |     params | backend    | ngl |            test |                  t/s |
+| ------------------------------ | ---------: | ---------: | ---------- | --: | --------------: | -------------------: |
+| gpt-oss ?B F16                 |  60.87 GiB |   116.83 B | Vulkan,RPC |  99 |           pp512 |        363.54 ± 3.60 |
+| gpt-oss ?B F16                 |  60.87 GiB |   116.83 B | Vulkan,RPC |  99 |           tg128 |         23.02 ± 0.10 |
+
+build: 9515c613 (6097)
+
+________________________________________________________
+Executed in  119.56 secs    fish           external
+   usr time   52.60 secs  523.00 micros   52.60 secs
+   sys time    5.29 secs  347.00 micros    5.29 secs
+```
+
+### 4
+```
+❯ time build/bin/llama-bench --rpc 192.168.128.12:50053,192.168.128.13:50053,192.168.128.14:50053 -m /models/gguf/gpt-oss-120b-F16.gguf    (base)
+ggml_vulkan: Found 1 Vulkan devices:
+ggml_vulkan: 0 = Radeon 8060S Graphics (AMD open-source driver) | uma: 1 | fp16: 1 | bf16: 0 | warp size: 64 | shared memory: 32768 | int dot: 1 | matrix cores: KHR_coopmat
+| model                          |       size |     params | backend    | ngl |            test |                  t/s |
+| ------------------------------ | ---------: | ---------: | ---------- | --: | --------------: | -------------------: |
+| gpt-oss ?B F16                 |  60.87 GiB |   116.83 B | Vulkan,RPC |  99 |           pp512 |        368.13 ± 1.76 |
+| gpt-oss ?B F16                 |  60.87 GiB |   116.83 B | Vulkan,RPC |  99 |           tg128 |         21.61 ± 0.05 |
+
+build: 9515c613 (6097)
+
+________________________________________________________
+Executed in  100.66 secs    fish           external
+   usr time   48.84 secs    0.00 micros   48.84 secs
+   sys time    2.72 secs  947.00 micros    2.71 secs
+```
+
+
+## 4 Machine RPC Tests
 
 - For Vulkan you will want to mmap otherwise your main node will use more memory and potentially OOM if you're squeezing a tight fit
 - For HIP/ROCm you will absolutely want to disable mmap if you're using >50% of memory or you will die of old age before the model loads
