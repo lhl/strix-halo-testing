@@ -59,9 +59,11 @@ You can reference the `[llama-cpp-bencher.py](llama-cpp-bencher.py)` directly fo
 
 - There is an [update-llama.cpp.sh](update-llama.cpp.sh) convenience script, but refer to the [official llama.cpp build docs](https://github.com/ggml-org/llama.cpp/blob/master/docs/build.md) for the latest/most authoritative documentation
   - When compiling the ROCm/HIP backend, you may need to tweak `ggml/src/ggml-cuda/vendors/hip.h` if you get a compilation error - The #ifdef versioning used is wrong (deprecations were with 6.5 on) - you might also just need/want to copy the fixed macros into the else statement...
-- For the ROCm backend, generally using the hipblaslt libs will be faster, using the `ROCBLAS_USE_HIPBLASLT=1` environment variable
+- For the ROCm backend, generally using the hipblaslt libs will be faster for pp (up to 2-3X in some cases!), using the `ROCBLAS_USE_HIPBLASLT=1` environment variable and I'd generally recommend trying that first
 - As mentioned, in my testing the AMDVLK Vulkan implementation seems to always be faster, although you can use `AMD_VULKAN_ICD=RADV` if necessary to use the Mesa RADV Vulkan if you have both installed
 - Be sure to disable mmap, eg `--mmap 0` for `llama-bench` or `--no-mmap` for `llama-cli` or `llama-server` otherwise you may incur extreme model loading speed penalties with the ROCm backend if exceeding 50% of the available system memory
+
+Sometimes the pp512/tg128 don't tell the whole story. If you're deciding on the optimal backend to use for a specific model, you may want to add pp4096/tg2048 just to see how the drop-off is at higher context.
 
 #### rocWMMA
 If you are using ROCm 6.5+ then llama.cppw/ rocWMMA will likely not work out of the box:
