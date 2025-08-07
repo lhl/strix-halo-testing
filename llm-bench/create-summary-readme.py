@@ -54,7 +54,7 @@ MODELS = {
         "arch": "Mistral 3",
         "weights": 24,
         "active": 24,
-        "pp": "hip_hipblaslt",
+        "pp": "rocwmma_hipblaslt_fa",
         "tg": "vulkan_fa",
         "line": {
             "color": (0.9, 0.7, 0.0, 0.9),
