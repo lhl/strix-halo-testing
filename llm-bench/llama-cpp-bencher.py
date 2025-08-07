@@ -379,11 +379,12 @@ def write_summary(df,out):
             return sub['tokens_per_sec'].iloc[-1] if not sub.empty else None
         pp512=_get('pp',512)
         tg128=_get('tg',128)
-        # Summarize memory based on the increase relative to the start of the
-        # run rather than the absolute peak values.  Using the delta fields
-        # ensures we report memory consumed by the benchmark itself even when
-        # the GPU already had allocations prior to the run.
-        mem=(grp['vram_delta_mib'] + grp['gtt_delta_mib']).max()
+        # NOTE: Using peak values instead of delta because our current implementation
+        # captures the "initial" memory after the process has started and potentially
+        # allocated memory, making delta values unreliable. Peak values provide
+        # consistent absolute memory usage that matches the aggregate summary.
+        mem=(grp['vram_peak_mib'] + grp['gtt_peak_mib']).max()
+        # mem=(grp['vram_delta_mib'] + grp['gtt_delta_mib']).max()  # Keep for future use if we fix baseline timing
         rows.append({'backend':b,'hipblaslt':hiplt,'fa':fa,'b':bf,'pp512':pp512,'tg128':tg128,'mem':mem})
 
     best_pp=max((r['pp512'] or 0 for r in rows),default=0)
