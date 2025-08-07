@@ -89,7 +89,7 @@ MODELS = {
         },
     },
     "Qwen3-235B-A22B-Instruct-2507-UD-Q3_K_XL": {
-        "name": "Qwen 3 235B-A22B UD-Q4_K_XL",
+        "name": "Qwen 3 235B-A22B UD-Q3_K_XL",
         "arch": "Qwen 3 MoE",
         "weights": 235,
         "active": 22,
