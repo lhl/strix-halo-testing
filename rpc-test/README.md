@@ -1,6 +1,10 @@
-Use the same build
+# llama.cpp RPC Tests
 
-## RPC Server
+For maximum compatibility you should use the same build# for all your RPC servers (add `-DGGML_RPC=ON` to your `cmake`)
+
+In theory, each build can be for whatever backend (Vulkan, HIP, CUDA, SYCL, etc) you want.
+
+## Running
 One each machine, run something like:
 
 ```
@@ -21,14 +25,18 @@ Starting RPC server v2.0.0
   backend memory : 112000 MB
 ```
 
-## Testing
+The rpc-server takes minimal memory, so you can run multiple servers on different ports.
 
-- You will want to mmap otherwise your main node will use more memory
-- You only specify the other servers now even w/ llama-bench?
-- use '-v' to get visibility
+The `-c` is important - it will cache tensors so they don't have to be constantly transferred every time.
 
-"load_tensors: tensor 'token_embd.weight' (q4_K) (and 272 others) cannot be used with preferred buffer type Vulkan_Host, using CPU instead"
+## RPC Tests
 
+- For Vulkan you will want to mmap otherwise your main node will use more memory and potentially OOM if you're squeezing a tight fit
+- For HIP/ROCm you will absolutely want to disable mmap if you're using >50% of memory or you will die of old age before the model loads
+- In the past you had to specify the local RPC server for llama-bench, but now you don't and it will automatically offload to the localhost server it looks like
+- use '-v' to get visibility on what's going on
+
+You can use small models for testing. You will [take a performance hit](https://github.com/lhl/strix-halo-testing/tree/main/llm-bench/gpt-oss-20b-F16#benchmark-results) as you distribute to more systems.
 
 ### gpt-oss 20b
 ```
@@ -48,12 +56,16 @@ Executed in   37.91 secs    fish           external
    usr time   12.48 secs  353.00 micros   12.48 secs
    sys time    1.27 secs  458.00 micros    1.27 secs
 ```
+- on a single machine pp512/tg128 is 1022/47
 
 ### gpt-oss 120b
-llama-bench -> rpc-server 10577 M 
-17268 M
-17268 M
-17268 M
+One thing worth noting is that Vulkan does not to a great job distributing memory evenly. Here's how it distributes the layers (you should use `amdgpu_top --smi` to easily watch the processes and memory usage):
+
+- cluster1: llama-bench -> rpc-server 10577 M 
+- cluster2: 17268 M
+- cluster3: 17268 M
+- cluster4: 17268 M
+
 ```
 ❯ time build/bin/llama-bench --rpc 192.168.128.12:50053,192.168.128.13:50053,192.168.128.14:50053 -m /models/gguf/gpt-oss-120b-F16.gguf                                                        (base)
 ggml_vulkan: Found 1 Vulkan devices:
@@ -70,9 +82,11 @@ Executed in  138.95 secs    fish           external
    usr time   58.74 secs    0.00 micros   58.74 secs
    sys time    7.23 secs  723.00 micros    7.23 secs
 ```
+- on a single machine pp512/tg128 is 431/34
+
 
 ### Tulu 3 405B
-
+Run big dense models incredibly slow (There's zero point to this, IMO)
 ```
 load_tensors: tensor 'token_embd.weight' (q4_K) (and 0 others) cannot be used with preferred buffer type Vulkan_Host, using CPU instead
 load_tensors: offloading 126 repeating layers to GPU
@@ -94,9 +108,8 @@ Executed in   31.48 mins    fish           external
    sys time   94.85 secs    2.17 millis   94.85 secs
 ```
 
-# DeepSeek R1 UD  Q2_K_XL
-
-
+### DeepSeek R1 UD Q2_K_XL
+Run gigantic MoEs at ... well, still relatively unusable speeds...
 ```
 load_tensors: tensor 'token_embd.weight' (q4_K) (and 0 others) cannot be used with preferred buffer type Vulkan_Host, using CPU instead
 load_tensors: offloading 61 repeating layers to GPU
@@ -123,7 +136,9 @@ Executed in  841.13 secs    fish           external
    sys time  103.04 secs    2.40 millis  103.04 secs
 ```
 
-# HIP 
+### DeepSeek R1 UD Q2_K_XL - HIP
+Now here's where we switch to HIP - the important thing to note is the memory distribution. Using HIP is significantly better when it comes to evenly distributing memory across nodes. Nope, I have no idea why.
+
 ```
 ❯ time build/bin/llama-bench --rpc 192.168.128.12:50054,192.168.128.13:50054,192.168.128.14:50054 -m /models/gguf/DeepSeek-R1-UD-Q2_K_XL/DeepSeek-R1-UD-Q2_K_XL-00001-of-00005.gguf -v
 
@@ -147,13 +162,15 @@ Executed in  594.00 secs    fish           external
    usr time  205.45 secs    0.41 millis  205.45 secs
    sys time   67.55 secs    1.32 millis   67.55 secs
 ```
+- it also surprisingly loads faster?
+- note mmap is on, but we're not yet crossing the 50% threshold
 
-Interesting, much more even w/ HIP...
-Also loads faster, runs slower?
 
+### DeepSeek R1 Q4_K_M
 
-# DeepSeek R1 Q4_K_M
-Crashes with Vulkan (OOM), uneven allocation. Works with ROCm (--mmap 0 for loading speed, doesn't use more memory):
+In theory this should fit, but this is where we crash w/ Vulkan (OOM on load) due to Vulkan's uneven allocation.
+
+With ROCm we need to `--mmap 0` for loading speed, and that's fine it loads, but it still ooms (after loading) at `pp512`. Here are `pp128` numbers. Even with a 4X cluster, there's barely enough memory left over with context over. You could increase memory limits a bit and the Q4_K_XL is a bit smaller, but you're probably better off with the Q3_K_XL if you want to actually use it, although... it'll be slow.
 
 ```
 ❯ time build/bin/llama-bench --rpc 192.168.128.12:50054,192.168.128.13:50054,192.168.128.14:50054 -m /models/gguf/DeepSeek-R1-Q4_K_M/DeepSeek-R1-Q4_K_M-00001-of-00011.gguf -v --mmap 0 -p 128
@@ -183,4 +200,47 @@ Executed in  581.31 secs    fish           external
    sys time   73.37 secs  948.00 micros   73.37 secs
 
 ```
-- this *barely* fits - you should try Q4_K_XL or better, Q3_K_XL, and make sure you're at the max (120GB+) for your RPC memory limits
+
+### Qwen3-Coder-480B-A35B-Instruct
+This *should* work... but it doesn't.
+
+```
+❯ time build/bin/llama-bench --rpc 192.168.128.12:50054,192.168.128.13:50054,192.168.128.14:50054 -m ~/Qwen3-Coder-480B-A35B-Instruct-GGUF/UD-Q6_K_XL/Qwen3-Coder-480B-A35B-Instruct-UD-Q6_K_XL-00001-of-00009.gguf  -v --mmap 0 -fa 1
+load_tensors: offloaded 63/63 layers to GPU
+load_tensors: RPC[192.168.128.12:50054] model buffer size = 103327.52 MiB
+load_tensors: RPC[192.168.128.13:50054] model buffer size = 96933.77 MiB
+load_tensors: RPC[192.168.128.14:50054] model buffer size = 98677.52 MiB
+load_tensors:        ROCm0 model buffer size = 89250.46 MiB
+load_tensors:    ROCm_Host model buffer size =   945.89 MiB
+load_all_data: device RPC[192.168.128.12:50054] does not support async, host buffers or events
+..........................load_all_data: device RPC[192.168.128.13:50054] does not support async, host buffers or events
+........................load_all_data: device RPC[192.168.128.14:50054] does not support async, host buffers or events
+..........................load_all_data: using async uploads for device ROCm0, buffer type ROCm0, backend ROCm0
+.......................load_all_data: buffer type ROCm_Host is not the default buffer type for device ROCm0 for async uploads
+...
+llama_context: RPC[192.168.128.12:50054] compute buffer size =   265.51 MiB
+llama_context: RPC[192.168.128.13:50054] compute buffer size =   264.51 MiB
+llama_context: RPC[192.168.128.14:50054] compute buffer size =   264.51 MiB
+llama_context:      ROCm0 compute buffer size =   308.75 MiB
+llama_context:        CPU compute buffer size =     1.01 MiB
+llama_context: graph nodes  = 3851
+llama_context: graph splits = 5
+attach_threadpool: call
+set_n_threads: n_threads = 16, n_threads_batch = 16
+Kernel Name: _ZL23flash_attn_tile_ext_f32ILi128ELi32ELi8ELb0EEvPKcS1_S1_S1_S1_PKiPfP15HIP_vector_typeIfLj2EEffffjfiiiiiiiiiiiiiliiliiiiil
+VGPU=0x559c73a321f0 SWq=0x7f7570e37000, HWq=0x7f745c100000, id=2
+        Dispatch Header = 0xb02 (type=2, barrier=1, acquire=1, release=1), setup=0
+        grid=[512, 8, 96], workgroup=[32, 8, 1]
+        private_seg_size=2096, group_seg_size=36992
+        kernel_obj=0x7f755e1ca6c0, kernarg_address=0x0x7f5e52601c00
+        completion_signal=0x0, correlation_id=0
+        rptr=22, wptr=33
+:0:rocdevice.cpp            :3594: 34648731232 us:  Callback: Queue 0x7f745c100000 aborting with error : HSA_STATUS_ERROR_EXCEPTION: An HSAIL operation resulted in a hardware exception. code: 0x1016
+
+________________________________________________________
+Executed in   17.06 mins    fish           external
+   usr time  304.02 secs    0.05 millis  304.02 secs
+   sys time  165.38 secs    1.03 millis  165.38 secs
+
+fish: Job 1, 'time build/bin/llama-bench --rp…' terminated by signal SIGABRT (Abort)
+```
