@@ -15,7 +15,7 @@ MODELS = {
         "arch": "dots1 MoE",
         "weights": 142,
         "active": 14,
-        "pp": "vulkan_fa_b=256",
+        "pp": "vulkan_fa",
         "tg": "vulkan_fa_b=256",
         "line": {
             "color": (1.0, 0.0, 0.0, 0.9),
