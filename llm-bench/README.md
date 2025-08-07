@@ -102,7 +102,7 @@ cmake -S . -B build -DGGML_HIP=ON -DAMDGPU_TARGETS=gfx1151 -DGGML_HIP_ROCWMMA_FA
 | Hunyuan-A13B UD-Q6_K_XL      | Hunyuan MoE    |            80 |           13 | Vulkan      | fa=1           |   296.6 |    18.1 |              69179 |
 | Llama 4 Scout UD-Q4_K_XL     | Llama 4 MoE    |           109 |           17 | HIP         | hipBLASLt      |   277.4 |    17.6 |              59720 |
 | Qwen 3 32B Q8_0              | Qwen 3         |            32 |           32 | HIP         | hipBLASLt      |   226.1 |     6.4 |              33683 |
-| dots1 UD-Q4_K_XL             | dots1 MoE      |           142 |           14 | Vulkan      | fa=1 b=256     |   139.1 |    22.1 |              83917 |
+| dots1 UD-Q4_K_XL             | dots1 MoE      |           142 |           14 | Vulkan      | fa=1           |   182.0 |    22.1 |              84082 |
 | Qwen 3 235B-A22B UD-Q4_K_XL  | Qwen 3 MoE     |           235 |           22 | HIP         | hipBLASLt      |   117.1 |    12.9 |              99950 |
 | Shisa V2 70B i1-Q4_K_M       | Llama 3        |            70 |           70 | HIP rocWMMA | hipBLASLt      |    94.7 |     4.5 |              41522 |
 
