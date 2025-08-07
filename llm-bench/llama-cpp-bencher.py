@@ -324,9 +324,16 @@ def comb_plot(df, metric, label, mode, out):
         style = RENDER.get(key, {})
         # Get latest result for each value in this configuration group
         latest_grp = grp.groupby('value').tail(1).sort_values('value')
+        
+        # For memory metrics, calculate combined delta
+        if metric == 'vram_peak_mib':
+            plot_data = latest_grp.get('vram_delta_mib', 0) + latest_grp.get('gtt_delta_mib', 0)
+        else:
+            plot_data = latest_grp[metric]
+            
         ax.plot(
             latest_grp["value"],
-            latest_grp[metric],
+            plot_data,
             label=_make_label(build, fa, b, hiplt),
             **style,
         )
@@ -368,7 +375,7 @@ def sweep_table(df,mode):
     return tabulate(table,headers=headers,tablefmt='github')
 
 def write_summary(df,out):
-    for met,lbl in [('tokens_per_sec','tokens/s'),('vram_peak_mib','Peak VRAM (MiB)')]:
+    for met,lbl in [('tokens_per_sec','tokens/s'),('vram_peak_mib','Memory Usage (MiB)')]:
         for mode in ('pp','tg'):
             comb_plot(df,met,lbl,mode,out)
 
@@ -379,12 +386,7 @@ def write_summary(df,out):
             return sub['tokens_per_sec'].iloc[-1] if not sub.empty else None
         pp512=_get('pp',512)
         tg128=_get('tg',128)
-        # NOTE: Using peak values instead of delta because our current implementation
-        # captures the "initial" memory after the process has started and potentially
-        # allocated memory, making delta values unreliable. Peak values provide
-        # consistent absolute memory usage that matches the aggregate summary.
-        mem=(grp['vram_peak_mib'] + grp['gtt_peak_mib']).max()
-        # mem=(grp['vram_delta_mib'] + grp['gtt_delta_mib']).max()  # Keep for future use if we fix baseline timing
+        mem=(grp['vram_delta_mib'] + grp['gtt_delta_mib']).max()
         rows.append({'backend':b,'hipblaslt':hiplt,'fa':fa,'b':bf,'pp512':pp512,'tg128':tg128,'mem':mem})
 
     best_pp=max((r['pp512'] or 0 for r in rows),default=0)
