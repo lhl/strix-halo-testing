@@ -66,58 +66,47 @@ paru -S vulkan-radeon amdvlk vulkan-headers vulkan-tools
 
 I've seen anywhere from no difference to 2X difference in pp performance (AMDVLK always seems to be faster) in limited testing although this may change depending on updates to the libraries. I don't swap Vulkan libs on my current sweeps but it's something to consider in the future...
 
-#### 2025-08-27
-So, a couple interesting discoveries. On my CachyOS system (6.16.0-mainline kernel), Mesa RADV (`vulkan-radeon 1:25.2.0-1`) has slighty faster MBW access and hence higher `tg` vs AMDVLK (`amdvlk 2025.Q2.1-1.1`), but it is flipped on an Arch system running the same kernel. Someone also reported at long context that Mesa RADV was more efficient (eg, 10K+ context) but I haven't tested.
+#### 2025-08-27: tuned and Vulkan implementations
+So, a couple interesting discoveries. 
 
-One thing I did test is that while `tuned` profile `accelerator-performance` has minimal impact on `tg`, it actually gives a 5-8% boost on `pp`:
+- On my CachyOS system (6.16.0-mainline kernel), Mesa RADV (`vulkan-radeon 1:25.2.0-1`) has slighty faster MBW access and hence higher `tg` vs AMDVLK (`amdvlk 2025.Q2.1-1.1`), but it is flipped on an Arch system running the same kernel. Someone also reported at long context that Mesa RADV was more efficient (eg, 10K+ context) but I haven't tested.
+
+- While there is a slight MBW boost when changing the `tuned` profile `accelerator-performance`, it has minimal impact on `tg`. *However*, it seems to give a significant a 5-8% boost on `pp`!
 
 
-`balanced`:
+Here is what AMDVLK looks like before and after (`build: 7ad67ba9 (6111)`):
+
 ```
-lhl in 🌐 strixhalo in llama.cpp-vulkan on  master is 📦 v0.0.0 via △ v4.0.3-dirty via 🐍 v3.12.10
-❯ build/bin/llama-bench --mmap 0 -fa 1 -m /models/gguf/llama-2-7b.Q4_0.gguf                                                                                                                                                                 (base)
-ggml_vulkan: Found 1 Vulkan devices:
-ggml_vulkan: 0 = Radeon 8060S Graphics (AMD open-source driver) | uma: 1 | fp16: 1 | bf16: 0 | warp size: 64 | shared memory: 32768 | int dot: 1 | matrix cores: KHR_coopmat
+❯ build/bin/llama-bench --mmap 0 -fa 1 -m /models/gguf/llama-2-7b.Q4_0.gguf
+```
+
 | model                          |       size |     params | backend    | ngl | fa | mmap |            test |                  t/s |
 | ------------------------------ | ---------: | ---------: | ---------- | --: | -: | ---: | --------------: | -------------------: |
 | llama 7B Q4_0                  |   3.56 GiB |     6.74 B | Vulkan     |  99 |  1 |    0 |           pp512 |       1216.56 ± 6.83 |
 | llama 7B Q4_0                  |   3.56 GiB |     6.74 B | Vulkan     |  99 |  1 |    0 |           tg128 |         46.68 ± 0.23 |
 
-build: 7ad67ba9 (6111)
-
-❯ AMD_VULKAN_ICD=RADV build/bin/llama-bench --mmap 0 -fa 1 -m /models/gguf/llama-2-7b.Q4_0.gguf                                                                                                                                             (base)
-ggml_vulkan: Found 1 Vulkan devices:
-ggml_vulkan: 0 = Radeon 8060S Graphics (RADV GFX1151) (radv) | uma: 1 | fp16: 1 | bf16: 0 | warp size: 64 | shared memory: 65536 | int dot: 1 | matrix cores: KHR_coopmat
-| model                          |       size |     params | backend    | ngl | fa | mmap |            test |                  t/s |
-| ------------------------------ | ---------: | ---------: | ---------- | --: | -: | ---: | --------------: | -------------------: |
-| llama 7B Q4_0                  |   3.56 GiB |     6.74 B | Vulkan     |  99 |  1 |    0 |           pp512 |        882.83 ± 4.53 |
-| llama 7B Q4_0                  |   3.56 GiB |     6.74 B | Vulkan     |  99 |  1 |    0 |           tg128 |         51.56 ± 0.18 |
-
-build: 7ad67ba9 (6111)
-```
-
-`accelerator-performance`:
-```
-❯ build/bin/llama-bench --mmap 0 -fa 1 -m /models/gguf/llama-2-7b.Q4_0.gguf                                                                                                                                                                 (base)
-ggml_vulkan: Found 1 Vulkan devices:
-ggml_vulkan: 0 = Radeon 8060S Graphics (AMD open-source driver) | uma: 1 | fp16: 1 | bf16: 0 | warp size: 64 | shared memory: 32768 | int dot: 1 | matrix cores: KHR_coopmat
 | model                          |       size |     params | backend    | ngl | fa | mmap |            test |                  t/s |
 | ------------------------------ | ---------: | ---------: | ---------- | --: | -: | ---: | --------------: | -------------------: |
 | llama 7B Q4_0                  |   3.56 GiB |     6.74 B | Vulkan     |  99 |  1 |    0 |           pp512 |       1314.00 ± 2.81 |
 | llama 7B Q4_0                  |   3.56 GiB |     6.74 B | Vulkan     |  99 |  1 |    0 |           tg128 |         46.90 ± 0.03 |
 
-build: 7ad67ba9 (6111)
 
-❯ AMD_VULKAN_ICD=RADV build/bin/llama-bench --mmap 0 -fa 1 -m /models/gguf/llama-2-7b.Q4_0.gguf                                                                                                                                             (base)
-ggml_vulkan: Found 1 Vulkan devices:
-ggml_vulkan: 0 = Radeon 8060S Graphics (RADV GFX1151) (radv) | uma: 1 | fp16: 1 | bf16: 0 | warp size: 64 | shared memory: 65536 | int dot: 1 | matrix cores: KHR_coopmat
+And with Mesa RADV:
+
+```
+❯ AMD_VULKAN_ICD=RADV build/bin/llama-bench --mmap 0 -fa 1 -m /models/gguf/llama-2-7b.Q4_0.gguf
+```
+
+| model                          |       size |     params | backend    | ngl | fa | mmap |            test |                  t/s |
+| ------------------------------ | ---------: | ---------: | ---------- | --: | -: | ---: | --------------: | -------------------: |
+| llama 7B Q4_0                  |   3.56 GiB |     6.74 B | Vulkan     |  99 |  1 |    0 |           pp512 |        882.83 ± 4.53 |
+| llama 7B Q4_0                  |   3.56 GiB |     6.74 B | Vulkan     |  99 |  1 |    0 |           tg128 |         51.56 ± 0.18 |
+
 | model                          |       size |     params | backend    | ngl | fa | mmap |            test |                  t/s |
 | ------------------------------ | ---------: | ---------: | ---------- | --: | -: | ---: | --------------: | -------------------: |
 | llama 7B Q4_0                  |   3.56 GiB |     6.74 B | Vulkan     |  99 |  1 |    0 |           pp512 |        931.93 ± 1.98 |
 | llama 7B Q4_0                  |   3.56 GiB |     6.74 B | Vulkan     |  99 |  1 |    0 |           tg128 |         51.88 ± 0.14 |
 
-build: 7ad67ba9 (6111)
-```
 
 ### ROCm
 Instead of using the [ROCm AUR packages](https://wiki.archlinux.org/title/GPGPU#ROCm) it's probably best for now to be using the [latest releases from TheRock](https://github.com/ROCm/TheRock/releases). You can simply make a folder (like `/opt/rocm`) and untar a `gfx1151` release in that.
