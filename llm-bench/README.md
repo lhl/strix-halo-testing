@@ -123,6 +123,8 @@ tar xvf ../therock-dist-linux-gfx1151-7.0.0rc20250714.tar.gz
 
 - You can choose wherever you want to put it and refer to [rocm-therock-env.sh](../rocm-therock-env.sh) for how to load the appropriate environment variables
 
+- The HIP backend is super crashy on many model architectures due to firmware/driver/ROCm problems? See: https://github.com/ROCm/ROCm/issues/5151
+
 ### llama.cpp
 You can reference the `[llama-cpp-bencher.py](llama-cpp-bencher.py)` directly for more info, but a few notes:
 
@@ -158,42 +160,42 @@ cmake -S . -B build -DGGML_HIP=ON -DAMDGPU_TARGETS=gfx1151 -DGGML_HIP_ROCWMMA_FA
 ### Prompt Processing (pp) Performance
 ![PP Performance](summary-results-pp.png)
 
-| Model Name                   | Architecture   |   Weights (B) |   Active (B) | Backend     | Flags          |   pp512 |   tg128 |   Memory (Max MiB) |
-|------------------------------|----------------|---------------|--------------|-------------|----------------|---------|---------|--------------------|
-| Llama 2 7B Q4_0              | Llama 2        |             7 |            7 | Vulkan      |                |  1230.0 |    48.3 |               4323 |
-| OpenAI gpt-oss 20B MXFP4     | gpt-oss        |            21 |            4 | HIP         | hipBLASLt      |  1196.2 |    46.9 |              12958 |
-| Llama 2 7B Q4_K_M            | Llama 2        |             7 |            7 | HIP rocWMMA | fa=1 hipBLASLt |  1083.0 |    41.3 |               4720 |
-| Shisa V2 8B i1-Q4_K_M        | Llama 3        |             8 |            8 | HIP         | hipBLASLt      |   878.2 |    37.2 |               5308 |
-| Qwen 3 30B-A3B UD-Q4_K_XL    | Qwen 3 MoE     |            30 |            3 | HIP rocWMMA | fa=1 hipBLASLt |   669.4 |    58.5 |              17533 |
-| OpenAI gpt-oss 120B MXFP4    | gpt-oss        |           117 |            5 | Vulkan      |                |   430.6 |    33.7 |              64157 |
-| Mistral Small 3.1 UD-Q4_K_XL | Mistral 3      |            24 |           24 | HIP rocWMMA | fa=1 hipBLASLt |   368.5 |    13.8 |              14638 |
-| Gemma 3 27B UD-Q4_K_XL       | Gemma 3        |            27 |           27 | HIP         | hipBLASLt      |   302.2 |    10.7 |              17542 |
-| Hunyuan-A13B UD-Q6_K_XL      | Hunyuan MoE    |            80 |           13 | Vulkan      | fa=1           |   296.6 |    18.1 |              69179 |
-| Llama 4 Scout UD-Q4_K_XL     | Llama 4 MoE    |           109 |           17 | HIP         | hipBLASLt      |   277.4 |    17.6 |              59720 |
-| Qwen 3 32B Q8_0              | Qwen 3         |            32 |           32 | HIP         | hipBLASLt      |   226.1 |     6.4 |              33683 |
-| dots1 UD-Q4_K_XL             | dots1 MoE      |           142 |           14 | Vulkan      | fa=1           |   182.0 |    22.1 |              84082 |
-| Qwen 3 235B-A22B UD-Q3_K_XL  | Qwen 3 MoE     |           235 |           22 | HIP         | hipBLASLt      |   117.1 |    12.9 |              99950 |
-| Shisa V2 70B i1-Q4_K_M       | Llama 3        |            70 |           70 | HIP rocWMMA | hipBLASLt      |    94.7 |     4.5 |              41522 |
+| Model Name                   | Architecture   |   Weights (B) |   Active (B) | Backend       | Flags          |   pp512 |   tg128 |   Memory (Max MiB) |
+|------------------------------|----------------|---------------|--------------|---------------|----------------|---------|---------|--------------------|
+| Llama 2 7B Q4_0              | Llama 2        |             7 |            7 | Vulkan AMDVLK | fa=1           |  1294.1 |    47.7 |               4281 |
+| OpenAI gpt-oss 20B MXFP4     | gpt-oss        |            21 |            4 | HIP           | hipBLASLt      |  1196.2 |    46.9 |              12958 |
+| Llama 2 7B Q4_K_M            | Llama 2        |             7 |            7 | HIP rocWMMA   | fa=1 hipBLASLt |  1083.0 |    41.3 |               4720 |
+| Shisa V2 8B i1-Q4_K_M        | Llama 3        |             8 |            8 | HIP           | hipBLASLt      |   878.2 |    37.2 |               5308 |
+| Qwen 3 30B-A3B UD-Q4_K_XL    | Qwen 3 MoE     |            30 |            3 | HIP rocWMMA   | fa=1 hipBLASLt |   669.4 |    58.5 |              17533 |
+| OpenAI gpt-oss 120B MXFP4    | gpt-oss        |           117 |            5 | Vulkan AMDVLK |                |   430.6 |    33.7 |              64157 |
+| Mistral Small 3.1 UD-Q4_K_XL | Mistral 3      |            24 |           24 | HIP rocWMMA   | fa=1 hipBLASLt |   368.5 |    13.8 |              14638 |
+| Gemma 3 27B UD-Q4_K_XL       | Gemma 3        |            27 |           27 | HIP           | hipBLASLt      |   302.2 |    10.7 |              17542 |
+| Hunyuan-A13B UD-Q6_K_XL      | Hunyuan MoE    |            80 |           13 | Vulkan AMDVLK | fa=1           |   296.6 |    18.1 |              69179 |
+| Llama 4 Scout UD-Q4_K_XL     | Llama 4 MoE    |           109 |           17 | HIP           | hipBLASLt      |   277.4 |    17.6 |              59720 |
+| Qwen 3 32B Q8_0              | Qwen 3         |            32 |           32 | HIP           | hipBLASLt      |   226.1 |     6.4 |              33683 |
+| dots1 UD-Q4_K_XL             | dots1 MoE      |           142 |           14 | Vulkan AMDVLK | fa=1           |   182.0 |    22.1 |              84082 |
+| Qwen 3 235B-A22B UD-Q3_K_XL  | Qwen 3 MoE     |           235 |           22 | HIP           | hipBLASLt      |   117.1 |    12.9 |              99950 |
+| Shisa V2 70B i1-Q4_K_M       | Llama 3        |            70 |           70 | HIP rocWMMA   | hipBLASLt      |    94.7 |     4.5 |              41522 |
 
 ### Text Generation (tg) Performance
 ![TG Performance](summary-results-tg.png)
 
-| Model Name                   | Architecture   |   Weights (B) |   Active (B) | Backend   | Flags          |   pp512 |   tg128 |   Memory (Max MiB) |
-|------------------------------|----------------|---------------|--------------|-----------|----------------|---------|---------|--------------------|
-| Qwen 3 30B-A3B UD-Q4_K_XL    | Qwen 3 MoE     |            30 |            3 | Vulkan    | b=256          |   645.5 |    78.0 |              17377 |
-| Llama 2 7B Q4_0              | Llama 2        |             7 |            7 | HIP       | fa=1 hipBLASLt |   975.3 |    49.4 |               4429 |
-| Llama 2 7B Q4_K_M            | Llama 2        |             7 |            7 | Vulkan    | fa=1           |   787.6 |    48.7 |               4463 |
-| OpenAI gpt-oss 20B MXFP4     | gpt-oss        |            21 |            4 | Vulkan    | b=256          |   943.1 |    47.0 |              14684 |
-| Shisa V2 8B i1-Q4_K_M        | Llama 3        |             8 |            8 | Vulkan    | fa=1           |   614.2 |    42.0 |               5333 |
-| OpenAI gpt-oss 120B MXFP4    | gpt-oss        |           117 |            5 | Vulkan    | b=256          |   386.8 |    33.7 |              63945 |
-| dots1 UD-Q4_K_XL             | dots1 MoE      |           142 |           14 | Vulkan    | fa=1 b=256     |   139.1 |    22.1 |              83917 |
-| Llama 4 Scout UD-Q4_K_XL     | Llama 4 MoE    |           109 |           17 | Vulkan    | fa=1 b=256     |   157.8 |    19.4 |              59917 |
-| Hunyuan-A13B UD-Q6_K_XL      | Hunyuan MoE    |            80 |           13 | Vulkan    | fa=1 b=256     |   244.8 |    18.1 |              69006 |
-| Qwen 3 235B-A22B UD-Q3_K_XL  | Qwen 3 MoE     |           235 |           22 | Vulkan    | fa=1           |   109.5 |    15.1 |             100446 |
-| Mistral Small 3.1 UD-Q4_K_XL | Mistral 3      |            24 |           24 | Vulkan    | fa=1           |   203.3 |    14.4 |              14540 |
-| Gemma 3 27B UD-Q4_K_XL       | Gemma 3        |            27 |           27 | Vulkan    | fa=1           |   114.7 |    11.8 |              18123 |
-| Qwen 3 32B Q8_0              | Qwen 3         |            32 |           32 | Vulkan    | fa=1           |   101.8 |     6.4 |              33886 |
-| Shisa V2 70B i1-Q4_K_M       | Llama 3        |            70 |           70 | Vulkan    | fa=1           |    26.4 |     5.0 |              41456 |
+| Model Name                   | Architecture   |   Weights (B) |   Active (B) | Backend       | Flags      |   pp512 |   tg128 |   Memory (Max MiB) |
+|------------------------------|----------------|---------------|--------------|---------------|------------|---------|---------|--------------------|
+| Qwen 3 30B-A3B UD-Q4_K_XL    | Qwen 3 MoE     |            30 |            3 | Vulkan AMDVLK | b=256      |   645.5 |    78.0 |              17377 |
+| Llama 2 7B Q4_0              | Llama 2        |             7 |            7 | Vulkan RADV   | fa=1       |   924.9 |    51.2 |               4276 |
+| Llama 2 7B Q4_K_M            | Llama 2        |             7 |            7 | Vulkan AMDVLK | fa=1       |   787.6 |    48.7 |               4463 |
+| OpenAI gpt-oss 20B MXFP4     | gpt-oss        |            21 |            4 | Vulkan AMDVLK | b=256      |   943.1 |    47.0 |              14684 |
+| Shisa V2 8B i1-Q4_K_M        | Llama 3        |             8 |            8 | Vulkan AMDVLK | fa=1       |   614.2 |    42.0 |               5333 |
+| OpenAI gpt-oss 120B MXFP4    | gpt-oss        |           117 |            5 | Vulkan AMDVLK | b=256      |   386.8 |    33.7 |              63945 |
+| dots1 UD-Q4_K_XL             | dots1 MoE      |           142 |           14 | Vulkan AMDVLK | fa=1 b=256 |   139.1 |    22.1 |              83917 |
+| Llama 4 Scout UD-Q4_K_XL     | Llama 4 MoE    |           109 |           17 | Vulkan AMDVLK | fa=1 b=256 |   157.8 |    19.4 |              59917 |
+| Hunyuan-A13B UD-Q6_K_XL      | Hunyuan MoE    |            80 |           13 | Vulkan AMDVLK | fa=1 b=256 |   244.8 |    18.1 |              69006 |
+| Qwen 3 235B-A22B UD-Q3_K_XL  | Qwen 3 MoE     |           235 |           22 | Vulkan AMDVLK | fa=1       |   109.5 |    15.1 |             100446 |
+| Mistral Small 3.1 UD-Q4_K_XL | Mistral 3      |            24 |           24 | Vulkan AMDVLK | fa=1       |   203.3 |    14.4 |              14540 |
+| Gemma 3 27B UD-Q4_K_XL       | Gemma 3        |            27 |           27 | Vulkan AMDVLK | fa=1       |   114.7 |    11.8 |              18123 |
+| Qwen 3 32B Q8_0              | Qwen 3         |            32 |           32 | Vulkan AMDVLK | fa=1       |   101.8 |     6.4 |              33886 |
+| Shisa V2 70B i1-Q4_K_M       | Llama 3        |            70 |           70 | Vulkan AMDVLK | fa=1       |    26.4 |     5.0 |              41456 |
 
 
 ## Testing Notes
