@@ -174,6 +174,7 @@ cmake -S . -B build -DGGML_HIP=ON -DAMDGPU_TARGETS=gfx1151 -DGGML_HIP_ROCWMMA_FA
 | Llama 4 Scout UD-Q4_K_XL     | Llama 4 MoE    |           109 |           17 | HIP           | hipBLASLt      |   277.4 |    17.6 |              59720 |
 | Qwen 3 32B Q8_0              | Qwen 3         |            32 |           32 | HIP           | hipBLASLt      |   226.1 |     6.4 |              33683 |
 | dots1 UD-Q4_K_XL             | dots1 MoE      |           142 |           14 | Vulkan AMDVLK | fa=1           |   182.0 |    22.1 |              84082 |
+| GLM 4.5 Air UD-Q4_K_XL       | GLM 4.5        |           106 |           12 | Vulkan AMDVLK | fa=1           |   178.5 |    22.6 |              68419 |
 | Qwen 3 235B-A22B UD-Q3_K_XL  | Qwen 3 MoE     |           235 |           22 | HIP           | hipBLASLt      |   117.1 |    12.9 |              99950 |
 | Shisa V2 70B i1-Q4_K_M       | Llama 3        |            70 |           70 | HIP rocWMMA   | hipBLASLt      |    94.7 |     4.5 |              41522 |
 
@@ -188,6 +189,7 @@ cmake -S . -B build -DGGML_HIP=ON -DAMDGPU_TARGETS=gfx1151 -DGGML_HIP_ROCWMMA_FA
 | OpenAI gpt-oss 20B MXFP4     | gpt-oss        |            21 |            4 | Vulkan AMDVLK | b=256      |   956.5 |    47.1 |              14690 |
 | Shisa V2 8B i1-Q4_K_M        | Llama 3        |             8 |            8 | Vulkan AMDVLK | fa=1       |   614.2 |    42.0 |               5333 |
 | OpenAI gpt-oss 120B MXFP4    | gpt-oss        |           117 |            5 | Vulkan AMDVLK | b=256      |   386.8 |    33.7 |              63972 |
+| GLM 4.5 Air UD-Q4_K_XL       | GLM 4.5        |           106 |           12 | Vulkan RADV   | fa=1       |   125.4 |    23.4 |              68365 |
 | dots1 UD-Q4_K_XL             | dots1 MoE      |           142 |           14 | Vulkan AMDVLK | fa=1 b=256 |   139.1 |    22.1 |              83917 |
 | Llama 4 Scout UD-Q4_K_XL     | Llama 4 MoE    |           109 |           17 | Vulkan AMDVLK | fa=1 b=256 |   157.8 |    19.4 |              59917 |
 | Hunyuan-A13B UD-Q6_K_XL      | Hunyuan MoE    |            80 |           13 | Vulkan AMDVLK | fa=1 b=256 |   244.8 |    18.1 |              69006 |

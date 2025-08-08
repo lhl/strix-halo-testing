@@ -207,6 +207,19 @@ MODELS = {
             "ls": ":",
         },
     },
+    "GLM-4.5-Air-UD-Q4_K_XL": {
+        "name": "GLM 4.5 Air UD-Q4_K_XL",
+        "arch": "GLM 4.5",
+        "weights": 106,
+        "active": 12,
+        "pp": "vulkan_amdvlk_fa",
+        "tg": "vulkan_radv_fa",
+        "line": {
+            "color": (0.4, 0.8, 0.5, 0.9),
+            "lw": 1,
+            "ls": ":",
+        },
+    },
 }
 
 def load_model_results(model_key):
