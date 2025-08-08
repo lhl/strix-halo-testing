@@ -38,6 +38,8 @@ sudo systemctl enable --now tuned
 tuned-adm list
 # - accelerator-performance     - Throughput performance based tuning with disabled higher latency STOP states
 sudo tuned-adm profile accelerator-performance
+tuned-adm active                                                                                                                                                                                         (base)
+# Current active profile: accelerator-performance
 ```
 
 Before:
