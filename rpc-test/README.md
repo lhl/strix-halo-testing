@@ -283,6 +283,8 @@ Executed in  581.31 secs    fish           external
 ### Qwen3-Coder-480B-A35B-Instruct
 This *should* work... but it doesn't.
 
+Here's the problem and a patch for RPC and some big/wide models having issues (like Qwen 3 235B+): https://github.com/ggml-org/llama.cpp/issues/15055#issuecomment-3165296254
+
 ```
 ❯ time build/bin/llama-bench --rpc 192.168.128.12:50054,192.168.128.13:50054,192.168.128.14:50054 -m ~/Qwen3-Coder-480B-A35B-Instruct-GGUF/UD-Q6_K_XL/Qwen3-Coder-480B-A35B-Instruct-UD-Q6_K_XL-00001-of-00009.gguf  -v --mmap 0 -fa 1
 load_tensors: offloaded 63/63 layers to GPU
