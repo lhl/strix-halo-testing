@@ -538,8 +538,8 @@ def main():
             env_opts.append({'ROCBLAS_USE_HIPBLASLT':'1'})
         elif backend=='vulkan':
             # For Vulkan, create separate environment configs for AMDVLK and RADV
-            # env_opts=[{}, {'AMD_VULKAN_ICD':'RADV'}]
-            env_opts=[{}]
+            env_opts=[{}, {'AMD_VULKAN_ICD':'RADV'}]
+            # env_opts=[{}]
         b_opts=['']
         if backend=='vulkan' and args.moe:
             b_opts.append('-b 256')
