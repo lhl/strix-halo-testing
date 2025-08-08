@@ -28,6 +28,31 @@ options ttm page_pool_size=15728640
 
 The Translation Table Maps (TTM) is the memory management subsystem that handles GPU memory allocation. `pages_limit` sets the maximum number or 4KiB pages that can be used for GPU memory. `page_pool_size` pre-caches/allocates the memory for usage by the GPU. This will not be available for your system. You probably don't want to set it too high if you will be using the system for other purposes/need memory.
 
+#### tuned
+You can improve further improve memory performance with `tuned`:
+
+
+```bash
+paru -S tuned
+sudo systemctl enable --now tuned
+tuned-adm list
+# - accelerator-performance     - Throughput performance based tuning with disabled higher latency STOP states
+sudo tuned-adm profile accelerator-performance
+```
+
+Before:
+```
+11 iteration. Passed  5.3863 seconds  written:  580.0GB 227.8GB/sec        checked:  609.0GB 214.4GB/sec
+```
+
+After:
+```
+11 iteration. Passed  5.2309 seconds  written:  580.0GB 234.4GB/sec        checked:  609.0GB 221.0GB/sec
+```
+
+You might also want to compare memory bandwidth between `AMD_VULKAN_ICD=RADV` and not, different systems seem to behave differently wrt to MBW between these two, which is... curious, to say the least.
+
+
 ### Vulkan
 There are multiple [Vulkan libraries](https://wiki.archlinux.org/title/Vulkan) available for AMD and I recommend installing at least two of them. If you're using Arch I recommend:
 
