@@ -202,3 +202,9 @@ cmake -S . -B build -DGGML_HIP=ON -DAMDGPU_TARGETS=gfx1151 -DGGML_HIP_ROCWMMA_FA
 The best overall backend and flags were chosen for each model family tested. You can see that often times the best backend for prefill vs token generation differ. Full results for each model (including the pp/tg graphs for different context lengths for all tested backend variations) are available for review in their respective folders as which backend is the best performing will depend on your exact use-case.
 
 There's a lot of performance still on the table when it comes to pp especially. Since these results should be close to optimal for when they were tested, I might add dates to the table  (adding kernel, ROCm, and llama.cpp build#'s might be a bit much).
+
+## Additional Resources
+
+- [Strix Halo HomeLab](https://strixhalo-homelab.d7.wtf/) - there is a wiki and Discord for those looking to get dig deeper into many technical aspects of running these Strix Halo machines
+- [AMD Strix Halo Llama.cpp Toolboxes](https://github.com/kyuz0/amd-strix-halo-toolboxes) - scripts for easily running docker containers with precompiled llama.cpp backends, and some additional testing notes
+- [Beowulf AI Cluster](https://github.com/geerlingguy/beowulf-ai-cluster) - for clustering, Jeff Geerling has been doing a bunch of work including writing ansible scripts for deployment; be sure to check the issues in the repo and his [Framework Desktop review](https://github.com/geerlingguy/sbc-reviews/issues/80)
