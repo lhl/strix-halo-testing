@@ -1,0 +1,654 @@
+[2025-08-09 23:43:41] === System Information ===
+[2025-08-09 23:43:41] Hostname: strixhalo
+[2025-08-09 23:43:41] CPU: AMD RYZEN AI MAX+ 395 w/ Radeon 8060S
+[2025-08-09 23:43:41] Memory: 125Gi
+[2025-08-09 23:43:41] Kernel: 6.16.0-1-mainline
+[2025-08-09 23:43:41] 
+clcopy - Double-precision cache line copy, only touches first element of each cache line.
+clload - Double-precision cache line load, only loads first element of each cache line.
+clstore - Double-precision cache line store, only stores first element of each cache line.
+copy - Double-precision vector copy, only scalar operations
+copy_avx - Double-precision vector copy, optimized for AVX
+copy_avx512 - Double-precision vector copy, optimized for AVX-512
+copy_mem - Double-precision vector copy, only scalar operations but with non-temporal stores
+copy_mem_avx - Double-precision vector copy, uses AVX and non-temporal stores
+copy_mem_avx512 - Double-precision vector copy, uses AVX-512 and non-temporal stores
+copy_mem_sse - Double-precision vector copy, uses SSE and non-temporal stores
+copy_sse - Double-precision vector copy, optimized for SSE
+daxpy - Double-precision linear combination of two vectors, only scalar operations
+daxpy_avx - Double-precision linear combination of two vectors, optimized for AVX
+daxpy_avx512 - Double-precision linear combination of two vectors, optimized for AVX-512
+daxpy_avx512_fma - Double-precision linear combination of two vectors, optimized for AVX-512 FMAs
+daxpy_avx_fma - Double-precision linear combination of two vectors, optimized for AVX FMAs
+daxpy_mem_avx - Double-precision linear combination of two vectors, optimized for AVX and non-temporal stores (Just for architectural research)
+daxpy_mem_avx512 - Double-precision linear combination of two vectors, optimized for AVX-512 and non-temporal stores
+daxpy_mem_avx512_fma - Double-precision linear combination of two vectors, optimized for AVX-512 FMAs and non-temporal stores (Just for architectural research)
+daxpy_mem_avx_fma - Double-precision linear combination of two vectors, optimized for AVX FMAs and non-temporal stores (Just for architectural research)
+daxpy_mem_sse - Double-precision linear combination of two vectors, optimized for SSE and non-temporal stores (Just for architectural research)
+daxpy_mem_sse_fma - Double-precision linear combination of two vectors, optimized for SSE FMAs and non temporal stores (Just for architectural research)
+daxpy_sp - Single-precision linear combination of two vectors, only scalar operations
+daxpy_sp_avx - Single-precision linear combination of two vectors, optimized for AVX
+daxpy_sp_avx512 - Single-precision linear combination of two vectors, optimized for AVX-512
+daxpy_sp_avx512_fma - Single-precision linear combination of two vectors, optimized for AVX-512 FMAs
+daxpy_sp_avx_fma - Single-precision linear combination of two vectors, optimized for AVX FMAs
+daxpy_sp_mem_avx - Single-precision linear combination of two vectors, optimized for AVX and non-temporal stores (Just for architectural research)
+daxpy_sp_mem_avx512 - Single-precision linear combination of two vectors, optimized for AVX-512 and non-temporal stores (Just for architectural research)
+daxpy_sp_mem_avx512_fma - Single-precision linear combination of two vectors, optimized for AVX-512 FMAs and non-temporal stores (Just for architectural research)
+daxpy_sp_mem_avx_fma - Single-precision linear combination of two vectors, optimized for AVX FMAs and non-temporal stores (Just for architectural research)
+daxpy_sp_mem_sse - Single-precision linear combination of two vectors, optimized for SSE and non-temporal stores (Just for architectural research)
+daxpy_sp_mem_sse_fma - Single-precision linear combination of two vectors, optimized for SSE FMAs and non-temporal stores (Just for architectural research)
+daxpy_sp_sse - Single-precision linear combination of two vectors, optimized for SSE
+daxpy_sp_sse_fma - Single-precision linear combination of two vectors, optimized for SSE FMAs
+daxpy_sse - Double-precision linear combination of two vectors, optimized for SSE
+daxpy_sse_fma - Double-precision linear combination of two vectors, optimized for SSE FMAs
+ddot - Double-precision dot product of two vectors, only scalar operations
+ddot_avx - Double-precision dot product of two vectors, optimized for AVX
+ddot_avx512 - Double-precision dot product of two vectors, optimized for AVX-512
+ddot_sp - Single-precision dot product of two vectors, only scalar operations
+ddot_sp_avx - Single-precision dot product of two vectors, optimized for AVX
+ddot_sp_avx512 - Single-precision dot product of two vectors, optimized for AVX-512
+ddot_sp_sse - Single-precision dot product of two vectors, optimized for SSE
+ddot_sse - Double-precision dot product of two vectors, optimized for SSE
+divide - Double-precision vector update, only scalar operations
+load - Double-precision load, only scalar operations
+load_avx - Double-precision load, optimized for AVX
+load_avx512 - Double-precision load, optimized for AVX-512
+load_mem - Double-precision load, using non-temporal loads
+load_sse - Double-precision load, optimized for SSE
+peakflops - Double-precision multiplications and additions with a single load, only scalar operations
+peakflops_avx - Double-precision multiplications and additions with a single load, optimized for AVX
+peakflops_avx512 - Double-precision multiplications and additions with a single load, optimized for AVX-512
+peakflops_avx512_fma - Double-precision multiplications and additions with a single load, optimized for AVX-512 FMAs
+peakflops_avx_fma - Double-precision multiplications and additions with a single load, optimized for AVX FMAs
+peakflops_sp - Single-precision multiplications and additions with a single load, only scalar operations
+peakflops_sp_avx - Single-precision multiplications and additions with a single load, optimized for AVX
+peakflops_sp_avx512 - Single-precision multiplications and additions with a single load, optimized for AVX-512
+peakflops_sp_avx512_fma - Single-precision multiplications and additions with a single load, optimized for AVX-512 FMAs
+peakflops_sp_avx_fma - Single-precision multiplications and additions with a single load, optimized for AVX FMAs
+peakflops_sp_sse - Single-precision multiplications and additions with a single load, optimised for SSE
+peakflops_sse - Double-precision multiplications and additions with a single load, optimised for SSE
+store - Double-precision store, only scalar operations
+store_avx - Double-precision store, optimized for AVX
+store_avx512 - Double-precision store, optimized for AVX-512
+store_mem - Double-precision store, uses non-temporal stores
+store_mem_avx - Double-precision store, uses AVX and non-temporal stores
+store_mem_avx512 - Double-precision store, uses AVX-512 and non-temporal stores
+store_mem_sse - Double-precision store, uses SSE and non-temporal stores
+store_sse - Double-precision store, optimized for SSE
+stream - Double-precision stream triad A(i) = B(i)*c + C(i), only scalar operations
+stream_avx - Double-precision stream triad A(i) = B(i)*c + C(i), optimized for AVX
+stream_avx512 - Double-precision stream triad A(i) = B(i)*c + C(i), optimized for AVX-512
+stream_avx512_fma - Double-precision stream triad A(i) = B(i)*c + C(i), optimized for AVX-512 FMAs
+stream_avx_fma - Double-precision stream triad A(i) = B(i)*c + C(i), optimized for AVX FMAs
+stream_mem - Double-precision stream triad A(i) = B(i)*c + C(i), uses scalar arithmetic and SSE non-temporal stores
+stream_mem_avx - Double-precision stream triad A(i) = B(i)*c + C(i), uses AVX and non-temporal stores
+stream_mem_avx512 - Double-precision stream triad A(i) = B(i)*c + C(i), uses AVX-512 and non-temporal stores
+stream_mem_avx_fma - Double-precision stream triad A(i) = B(i)*c + C(i), optimized for AVX FMAs and non-temporal stores
+stream_mem_sse - Double-precision stream triad A(i) = B(i)*c + C(i), uses SSE and non-temporal stores
+stream_mem_sse_fma - Double-precision stream triad A(i) = B(i)*c + C(i), uses SSE FMAs and non-temporal stores
+stream_sp - Single-precision stream triad A(i) = B(i)*c + C(i), only scalar operations
+stream_sp_avx - Single-precision stream triad A(i) = B(i)*c + C(i), optimized for AVX
+stream_sp_avx512 - Single-precision stream triad A(i) = B(i)*c + C(i), optimized for AVX-512
+stream_sp_avx512_fma - Single-precision stream triad A(i) = B(i)*c + C(i), optimized for AVX-512 FMAs
+stream_sp_avx_fma - Single-precision stream triad A(i) = B(i)*c + C(i), optimized for AVX FMAs
+stream_sp_mem - Single-precision stream triad A(i) = B(i)*c + C(i), uses scalar arithmetic and SSE non-temporal stores
+stream_sp_mem_avx - Single-precision stream triad A(i) = B(i)*c + C(i), optimized for AVX and non-temporal stores
+stream_sp_mem_avx512 - Single-precision stream triad A(i) = B(i)*c + C(i), optimized for AVX-512 and non-temporal stores
+stream_sp_mem_avx512_fma - Single-precision stream triad A(i) = B(i)*c + C(i), optimized for AVX-512 FMAs and non-temporal stores
+stream_sp_mem_avx_fma - Single-precision stream triad A(i) = B(i)*c + C(i), optimized for AVX FMAs and non-temporal stores
+stream_sp_mem_sse - Single-precision stream triad A(i) = B(i)*c + C(i), optimized for SSE and non-temporal stores
+stream_sp_mem_sse_fma - Single-precision stream triad A(i) = B(i)*c + C(i), optimized for SSE FMAs and non-temporal stores
+stream_sp_sse - Single-precision stream triad A(i) = B(i)*c + C(i), optimized for SSE
+stream_sp_sse_fma - Single-precision stream triad A(i) = B(i)*c + C(i), optimized for SSE FMAs
+stream_sse - Double-precision stream triad A(i) = B(i)*c + C(i), optimized for SSE
+stream_sse_fma - Double-precision stream triad A(i) = B(i)*c + C(i), optimized for SSE FMAs
+sum - Double-precision sum of a vector, only scalar operations
+sum_avx - Double-precision sum of a vector, optimized for AVX
+sum_avx512 - Double-precision sum of a vector, optimized for AVX-512
+sum_sp - Single-precision sum of a vector, only scalar operations
+sum_sp_avx - Single-precision sum of a vector, optimized for AVX
+sum_sp_avx512 - Single-precision sum of a vector, optimized for AVX-512
+sum_sp_sse - Single-precision sum of a vector, optimized for SSE
+sum_sse - Double-precision sum of a vector, optimized for SSE
+triad - Double-precision triad A(i) = B(i) * C(i) + D(i), only scalar operations
+triad_avx - Double-precision triad A(i) = B(i) * C(i) + D(i), optimized for AVX
+triad_avx512 - Double-precision triad A(i) = B(i) * C(i) + D(i), optimized for AVX-512
+triad_avx512_fma - Double-precision triad A(i) = B(i) * C(i) + D(i), optimized for AVX-512 FMAs
+triad_avx_fma - Double-precision triad A(i) = B(i) * C(i) + D(i), optimized for AVX FMAs
+triad_mem_avx - Double-precision triad A(i) = B(i) * C(i) + D(i), uses AVX and non-temporal stores
+triad_mem_avx512 - Double-precision triad A(i) = B(i) * C(i) + D(i), uses AVX-512 and non-temporal stores
+triad_mem_avx512_fma - Double-precision triad A(i) = B(i) * C(i) + D(i), optimized for AVX-512 FMAs and non-temporal stores
+triad_mem_avx_fma - Double-precision triad A(i) = B(i) * C(i) + D(i), optimized for AVX FMAs and non-temporal stores
+triad_mem_sse - Double-precision triad A(i) = B(i) * C(i) + D(i), optimized for SSE and non-temporal stores
+triad_mem_sse_fma - Double-precision triad A(i) = B(i) * C(i) + D(i), optimized for SSE FMAs and non-temporal stores
+triad_sp - Single-precision triad A(i) = B(i) * C(i) + D(i), only scalar operations
+triad_sp_avx - Single-precision triad A(i) = B(i) * C(i) + D(i), optimized for AVX
+triad_sp_avx512 - Single-precision triad A(i) = B(i) * C(i) + D(i), optimized for AVX-512
+triad_sp_avx512_fma - Single-precision triad A(i) = B(i) * C(i) + D(i), optimized for AVX-512 FMAs
+triad_sp_avx_fma - Single-precision triad A(i) = B(i) * C(i) + D(i), optimized for AVX FMAs
+triad_sp_mem_avx - Single-precision triad A(i) = B(i) * C(i) + D(i), optimized for AVX and non-temporal stores
+triad_sp_mem_avx512 - Single-precision triad A(i) = B(i) * C(i) + D(i), optimized for AVX-512 and non-temporal stores
+triad_sp_mem_avx512_fma - Single-precision triad A(i) = B(i) * C(i) + D(i), optimized for AVX-512 FMAs and non-temporal stores
+triad_sp_mem_avx_fma - Single-precision triad A(i) = B(i) * C(i) + D(i), optimized for AVX FMAs and non-temporal stores
+triad_sp_mem_sse - Single-precision triad A(i) = B(i) * C(i) + D(i), optimized for SSE and non-temporal stores
+triad_sp_mem_sse_fma - Single-precision triad A(i) = B(i) * C(i) + D(i), optimized for SSE FMAs and non-temporal stores
+triad_sp_sse - Single-precision triad A(i) = B(i) * C(i) + D(i), optimized for SSE
+triad_sp_sse_fma - Single-precision triad A(i) = B(i) * C(i) + D(i), optimized for SSE FMAs
+triad_sse - Double-precision triad A(i) = B(i) * C(i) + D(i), optimized for SSE
+triad_sse_fma - Double-precision triad A(i) = B(i) * C(i) + D(i), optimized for SSE FMAs
+update - Double-precision vector update, only scalar operations
+update_avx - Double-precision vector update, optimized for AVX
+update_avx512 - Double-precision vector update, optimized for AVX-512
+update_sp - Single-precision vector update, only scalar operations
+update_sp_avx - Single-precision vector update, optimized for AVX
+update_sp_avx512 - Single-precision vector update, optimized for AVX-512
+update_sp_sse - Single-precision vector update, optimized for SSE
+update_sse - Double-precision vector update, optimized for SSE
+
+User benchmarks:
+[2025-08-09 23:43:41] === Starting Memory Bandwidth Benchmarks ===
+[2025-08-09 23:43:41] Working Set: S0:1GB
+[2025-08-09 23:43:41] Test Duration: 10s
+[2025-08-09 23:43:41] Iterations: 3
+[2025-08-09 23:43:41] 
+[2025-08-09 23:43:41] === Copy Benchmark ===
+Running without Marker API. Activate Marker API with -m on commandline.
+Warning: Sanitizing vector length to a multiple of the loop stride 4 and thread count 32 from 62500000 elements (500000000 bytes) to 62499968 elements (499999744 bytes)
+Allocate: Process running on hwthread 0 (Domain S0) - Vector length 62499968/499999744 Offset 0 Alignment 512
+Allocate: Process running on hwthread 0 (Domain S0) - Vector length 62499968/499999744 Offset 0 Alignment 512
+Initialization: First thread in domain initializes the whole stream
+--------------------------------------------------------------------------------
+LIKWID MICRO BENCHMARK
+Test: copy
+--------------------------------------------------------------------------------
+Using 1 work groups
+Using 32 threads
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+Group: 0 Thread 0 Global Thread 0 running on hwthread 0 - Vector length 1953124 Offset 0
+Group: 0 Thread 1 Global Thread 1 running on hwthread 16 - Vector length 1953124 Offset 1953124
+Group: 0 Thread 2 Global Thread 2 running on hwthread 1 - Vector length 1953124 Offset 3906248
+Group: 0 Thread 3 Global Thread 3 running on hwthread 17 - Vector length 1953124 Offset 5859372
+Group: 0 Thread 4 Global Thread 4 running on hwthread 2 - Vector length 1953124 Offset 7812496
+Group: 0 Thread 5 Global Thread 5 running on hwthread 18 - Vector length 1953124 Offset 9765620
+Group: 0 Thread 6 Global Thread 6 running on hwthread 3 - Vector length 1953124 Offset 11718744
+Group: 0 Thread 7 Global Thread 7 running on hwthread 19 - Vector length 1953124 Offset 13671868
+Group: 0 Thread 9 Global Thread 9 running on hwthread 20 - Vector length 1953124 Offset 17578116
+Group: 0 Thread 8 Global Thread 8 running on hwthread 4 - Vector length 1953124 Offset 15624992
+Group: 0 Thread 10 Global Thread 10 running on hwthread 5 - Vector length 1953124 Offset 19531240
+Group: 0 Thread 11 Global Thread 11 running on hwthread 21 - Vector length 1953124 Offset 21484364
+Group: 0 Thread 13 Global Thread 13 running on hwthread 22 - Vector length 1953124 Offset 25390612
+Group: 0 Thread 12 Global Thread 12 running on hwthread 6 - Vector length 1953124 Offset 23437488
+Group: 0 Thread 14 Global Thread 14 running on hwthread 7 - Vector length 1953124 Offset 27343736
+Group: 0 Thread 15 Global Thread 15 running on hwthread 23 - Vector length 1953124 Offset 29296860
+Group: 0 Thread 17 Global Thread 17 running on hwthread 24 - Vector length 1953124 Offset 33203108
+Group: 0 Thread 16 Global Thread 16 running on hwthread 8 - Vector length 1953124 Offset 31249984
+Group: 0 Thread 19 Global Thread 19 running on hwthread 25 - Vector length 1953124 Offset 37109356
+Group: 0 Thread 18 Global Thread 18 running on hwthread 9 - Vector length 1953124 Offset 35156232
+Group: 0 Thread 20 Global Thread 20 running on hwthread 10 - Vector length 1953124 Offset 39062480
+Group: 0 Thread 21 Global Thread 21 running on hwthread 26 - Vector length 1953124 Offset 41015604
+Group: 0 Thread 23 Global Thread 23 running on hwthread 27 - Vector length 1953124 Offset 44921852
+Group: 0 Thread 22 Global Thread 22 running on hwthread 11 - Vector length 1953124 Offset 42968728
+Group: 0 Thread 25 Global Thread 25 running on hwthread 28 - Vector length 1953124 Offset 48828100
+Group: 0 Thread 24 Global Thread 24 running on hwthread 12 - Vector length 1953124 Offset 46874976
+Group: 0 Thread 26 Global Thread 26 running on hwthread 13 - Vector length 1953124 Offset 50781224
+Group: 0 Thread 27 Global Thread 27 running on hwthread 29 - Vector length 1953124 Offset 52734348
+Group: 0 Thread 28 Global Thread 28 running on hwthread 14 - Vector length 1953124 Offset 54687472
+Group: 0 Thread 29 Global Thread 29 running on hwthread 30 - Vector length 1953124 Offset 56640596
+Group: 0 Thread 31 Global Thread 31 running on hwthread 31 - Vector length 1953124 Offset 60546844
+Group: 0 Thread 30 Global Thread 30 running on hwthread 15 - Vector length 1953124 Offset 58593720
+--------------------------------------------------------------------------------
+Cycles:			88521030
+CPU Clock:		2994341468
+Cycle Clock:		2994341468
+Time:			2.956277e-02 sec
+Iterations:		96
+Iterations per thread:	3
+Inner loop executions:	488281
+Size (Byte):		999999488
+Size per thread:	31249984
+Number of Flops:	0
+MFlops/s:		0.00
+Data volume (Byte):	2999998464
+MByte/s:		101478.93
+Cycles per update:	0.472112
+Cycles per cacheline:	3.776899
+Loads per update:	1
+Stores per update:	1
+Load bytes per element:	8
+Store bytes per elem.:	8
+Load/store ratio:	1.00
+Instructions:		515624752
+UOPs:			656249664
+--------------------------------------------------------------------------------
+[2025-08-09 23:43:43] 
+[2025-08-09 23:43:43] === STREAM Benchmark ===
+Running without Marker API. Activate Marker API with -m on commandline.
+Warning: Sanitizing vector length to a multiple of the loop stride 4 and thread count 32 from 41666666 elements (333333328 bytes) to 41666560 elements (333332480 bytes)
+Allocate: Process running on hwthread 0 (Domain S0) - Vector length 41666560/333332480 Offset 0 Alignment 512
+Allocate: Process running on hwthread 0 (Domain S0) - Vector length 41666560/333332480 Offset 0 Alignment 512
+Allocate: Process running on hwthread 0 (Domain S0) - Vector length 41666560/333332480 Offset 0 Alignment 512
+Initialization: First thread in domain initializes the whole stream
+--------------------------------------------------------------------------------
+LIKWID MICRO BENCHMARK
+Test: stream
+--------------------------------------------------------------------------------
+Using 1 work groups
+Using 32 threads
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+Group: 0 Thread 0 Global Thread 0 running on hwthread 0 - Vector length 1302080 Offset 0
+Group: 0 Thread 1 Global Thread 1 running on hwthread 16 - Vector length 1302080 Offset 1302080
+Group: 0 Thread 3 Global Thread 3 running on hwthread 17 - Vector length 1302080 Offset 3906240
+Group: 0 Thread 2 Global Thread 2 running on hwthread 1 - Vector length 1302080 Offset 2604160
+Group: 0 Thread 4 Global Thread 4 running on hwthread 2 - Vector length 1302080 Offset 5208320
+Group: 0 Thread 5 Global Thread 5 running on hwthread 18 - Vector length 1302080 Offset 6510400
+Group: 0 Thread 6 Global Thread 6 running on hwthread 3 - Vector length 1302080 Offset 7812480
+Group: 0 Thread 7 Global Thread 7 running on hwthread 19 - Vector length 1302080 Offset 9114560
+Group: 0 Thread 9 Global Thread 9 running on hwthread 20 - Vector length 1302080 Offset 11718720
+Group: 0 Thread 8 Global Thread 8 running on hwthread 4 - Vector length 1302080 Offset 10416640
+Group: 0 Thread 11 Global Thread 11 running on hwthread 21 - Vector length 1302080 Offset 14322880
+Group: 0 Thread 10 Global Thread 10 running on hwthread 5 - Vector length 1302080 Offset 13020800
+Group: 0 Thread 12 Global Thread 12 running on hwthread 6 - Vector length 1302080 Offset 15624960
+Group: 0 Thread 13 Global Thread 13 running on hwthread 22 - Vector length 1302080 Offset 16927040
+Group: 0 Thread 14 Global Thread 14 running on hwthread 7 - Vector length 1302080 Offset 18229120
+Group: 0 Thread 15 Global Thread 15 running on hwthread 23 - Vector length 1302080 Offset 19531200
+Group: 0 Thread 17 Global Thread 17 running on hwthread 24 - Vector length 1302080 Offset 22135360
+Group: 0 Thread 16 Global Thread 16 running on hwthread 8 - Vector length 1302080 Offset 20833280
+Group: 0 Thread 18 Global Thread 18 running on hwthread 9 - Vector length 1302080 Offset 23437440
+Group: 0 Thread 19 Global Thread 19 running on hwthread 25 - Vector length 1302080 Offset 24739520
+Group: 0 Thread 20 Global Thread 20 running on hwthread 10 - Vector length 1302080 Offset 26041600
+Group: 0 Thread 21 Global Thread 21 running on hwthread 26 - Vector length 1302080 Offset 27343680
+Group: 0 Thread 22 Global Thread 22 running on hwthread 11 - Vector length 1302080 Offset 28645760
+Group: 0 Thread 23 Global Thread 23 running on hwthread 27 - Vector length 1302080 Offset 29947840
+Group: 0 Thread 25 Global Thread 25 running on hwthread 28 - Vector length 1302080 Offset 32552000
+Group: 0 Thread 24 Global Thread 24 running on hwthread 12 - Vector length 1302080 Offset 31249920
+Group: 0 Thread 26 Global Thread 26 running on hwthread 13 - Vector length 1302080 Offset 33854080
+Group: 0 Thread 27 Global Thread 27 running on hwthread 29 - Vector length 1302080 Offset 35156160
+Group: 0 Thread 28 Global Thread 28 running on hwthread 14 - Vector length 1302080 Offset 36458240
+Group: 0 Thread 29 Global Thread 29 running on hwthread 30 - Vector length 1302080 Offset 37760320
+Group: 0 Thread 30 Global Thread 30 running on hwthread 15 - Vector length 1302080 Offset 39062400
+Group: 0 Thread 31 Global Thread 31 running on hwthread 31 - Vector length 1302080 Offset 40364480
+--------------------------------------------------------------------------------
+Cycles:			89854800
+CPU Clock:		2994344234
+Cycle Clock:		2994344234
+Time:			3.000817e-02 sec
+Iterations:		96
+Iterations per thread:	3
+Inner loop executions:	325520
+Size (Byte):		999997440
+Size per thread:	31249920
+Number of Flops:	249999360
+MFlops/s:		8331.04
+Data volume (Byte):	2999992320
+MByte/s:		99972.51
+Cycles per update:	0.718840
+Cycles per cacheline:	5.750722
+Loads per update:	2
+Stores per update:	1
+Load bytes per element:	16
+Store bytes per elem.:	8
+Load/store ratio:	2.00
+Instructions:		593748497
+UOPs:			812497920
+--------------------------------------------------------------------------------
+[2025-08-09 23:43:44] 
+[2025-08-09 23:43:44] === Triad Benchmark (a = b + c*d) ===
+Running without Marker API. Activate Marker API with -m on commandline.
+Warning: Sanitizing vector length to a multiple of the loop stride 4 and thread count 32 from 31250000 elements (250000000 bytes) to 31249920 elements (249999360 bytes)
+Allocate: Process running on hwthread 0 (Domain S0) - Vector length 31249920/249999360 Offset 0 Alignment 512
+Allocate: Process running on hwthread 0 (Domain S0) - Vector length 31249920/249999360 Offset 0 Alignment 512
+Allocate: Process running on hwthread 0 (Domain S0) - Vector length 31249920/249999360 Offset 0 Alignment 512
+Allocate: Process running on hwthread 0 (Domain S0) - Vector length 31249920/249999360 Offset 0 Alignment 512
+Initialization: First thread in domain initializes the whole stream
+--------------------------------------------------------------------------------
+LIKWID MICRO BENCHMARK
+Test: triad
+--------------------------------------------------------------------------------
+Using 1 work groups
+Using 32 threads
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+Group: 0 Thread 0 Global Thread 0 running on hwthread 0 - Vector length 976560 Offset 0
+Group: 0 Thread 1 Global Thread 1 running on hwthread 16 - Vector length 976560 Offset 976560
+Group: 0 Thread 2 Global Thread 2 running on hwthread 1 - Vector length 976560 Offset 1953120
+Group: 0 Thread 3 Global Thread 3 running on hwthread 17 - Vector length 976560 Offset 2929680
+Group: 0 Thread 5 Global Thread 5 running on hwthread 18 - Vector length 976560 Offset 4882800
+Group: 0 Thread 4 Global Thread 4 running on hwthread 2 - Vector length 976560 Offset 3906240
+Group: 0 Thread 7 Global Thread 7 running on hwthread 19 - Vector length 976560 Offset 6835920
+Group: 0 Thread 6 Global Thread 6 running on hwthread 3 - Vector length 976560 Offset 5859360
+Group: 0 Thread 8 Global Thread 8 running on hwthread 4 - Vector length 976560 Offset 7812480
+Group: 0 Thread 9 Global Thread 9 running on hwthread 20 - Vector length 976560 Offset 8789040
+Group: 0 Thread 11 Global Thread 11 running on hwthread 21 - Vector length 976560 Offset 10742160
+Group: 0 Thread 10 Global Thread 10 running on hwthread 5 - Vector length 976560 Offset 9765600
+Group: 0 Thread 13 Global Thread 13 running on hwthread 22 - Vector length 976560 Offset 12695280
+Group: 0 Thread 12 Global Thread 12 running on hwthread 6 - Vector length 976560 Offset 11718720
+Group: 0 Thread 15 Global Thread 15 running on hwthread 23 - Vector length 976560 Offset 14648400
+Group: 0 Thread 14 Global Thread 14 running on hwthread 7 - Vector length 976560 Offset 13671840
+Group: 0 Thread 16 Global Thread 16 running on hwthread 8 - Vector length 976560 Offset 15624960
+Group: 0 Thread 17 Global Thread 17 running on hwthread 24 - Vector length 976560 Offset 16601520
+Group: 0 Thread 19 Global Thread 19 running on hwthread 25 - Vector length 976560 Offset 18554640
+Group: 0 Thread 18 Global Thread 18 running on hwthread 9 - Vector length 976560 Offset 17578080
+Group: 0 Thread 20 Global Thread 20 running on hwthread 10 - Vector length 976560 Offset 19531200
+Group: 0 Thread 21 Global Thread 21 running on hwthread 26 - Vector length 976560 Offset 20507760
+Group: 0 Thread 23 Global Thread 23 running on hwthread 27 - Vector length 976560 Offset 22460880
+Group: 0 Thread 22 Global Thread 22 running on hwthread 11 - Vector length 976560 Offset 21484320
+Group: 0 Thread 25 Global Thread 25 running on hwthread 28 - Vector length 976560 Offset 24414000
+Group: 0 Thread 24 Global Thread 24 running on hwthread 12 - Vector length 976560 Offset 23437440
+Group: 0 Thread 26 Global Thread 26 running on hwthread 13 - Vector length 976560 Offset 25390560
+Group: 0 Thread 27 Global Thread 27 running on hwthread 29 - Vector length 976560 Offset 26367120
+Group: 0 Thread 28 Global Thread 28 running on hwthread 14 - Vector length 976560 Offset 27343680
+Group: 0 Thread 29 Global Thread 29 running on hwthread 30 - Vector length 976560 Offset 28320240
+Group: 0 Thread 31 Global Thread 31 running on hwthread 31 - Vector length 976560 Offset 30273360
+Group: 0 Thread 30 Global Thread 30 running on hwthread 15 - Vector length 976560 Offset 29296800
+--------------------------------------------------------------------------------
+Cycles:			89512320
+CPU Clock:		2994344097
+Cycle Clock:		2994344097
+Time:			2.989380e-02 sec
+Iterations:		96
+Iterations per thread:	3
+Inner loop executions:	244140
+Size (Byte):		999997440
+Size per thread:	31249920
+Number of Flops:	187499520
+MFlops/s:		6272.19
+Data volume (Byte):	2999992320
+MByte/s:		100355.00
+Cycles per update:	0.954801
+Cycles per cacheline:	7.638404
+Loads per update:	3
+Stores per update:	1
+Load bytes per element:	24
+Store bytes per elem.:	8
+Load/store ratio:	3.00
+Instructions:		445311376
+UOPs:			703123200
+--------------------------------------------------------------------------------
+[2025-08-09 23:43:46] 
+[2025-08-09 23:43:46] === Load Benchmark ===
+Running without Marker API. Activate Marker API with -m on commandline.
+Warning: Sanitizing vector length to a multiple of the loop stride 8 and thread count 32 from 125000000 elements (1000000000 bytes) to 124999936 elements (999999488 bytes)
+Allocate: Process running on hwthread 0 (Domain S0) - Vector length 124999936/999999488 Offset 0 Alignment 512
+Initialization: First thread in domain initializes the whole stream
+--------------------------------------------------------------------------------
+LIKWID MICRO BENCHMARK
+Test: load
+--------------------------------------------------------------------------------
+Using 1 work groups
+Using 32 threads
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+Group: 0 Thread 0 Global Thread 0 running on hwthread 0 - Vector length 3906248 Offset 0
+Group: 0 Thread 1 Global Thread 1 running on hwthread 16 - Vector length 3906248 Offset 3906248
+Group: 0 Thread 3 Global Thread 3 running on hwthread 17 - Vector length 3906248 Offset 11718744
+Group: 0 Thread 2 Global Thread 2 running on hwthread 1 - Vector length 3906248 Offset 7812496
+Group: 0 Thread 4 Global Thread 4 running on hwthread 2 - Vector length 3906248 Offset 15624992
+Group: 0 Thread 6 Global Thread 6 running on hwthread 3 - Vector length 3906248 Offset 23437488
+Group: 0 Thread 5 Global Thread 5 running on hwthread 18 - Vector length 3906248 Offset 19531240
+Group: 0 Thread 7 Global Thread 7 running on hwthread 19 - Vector length 3906248 Offset 27343736
+Group: 0 Thread 9 Global Thread 9 running on hwthread 20 - Vector length 3906248 Offset 35156232
+Group: 0 Thread 8 Global Thread 8 running on hwthread 4 - Vector length 3906248 Offset 31249984
+Group: 0 Thread 11 Global Thread 11 running on hwthread 21 - Vector length 3906248 Offset 42968728
+Group: 0 Thread 10 Global Thread 10 running on hwthread 5 - Vector length 3906248 Offset 39062480
+Group: 0 Thread 12 Global Thread 12 running on hwthread 6 - Vector length 3906248 Offset 46874976
+Group: 0 Thread 13 Global Thread 13 running on hwthread 22 - Vector length 3906248 Offset 50781224
+Group: 0 Thread 15 Global Thread 15 running on hwthread 23 - Vector length 3906248 Offset 58593720
+Group: 0 Thread 14 Global Thread 14 running on hwthread 7 - Vector length 3906248 Offset 54687472
+Group: 0 Thread 16 Global Thread 16 running on hwthread 8 - Vector length 3906248 Offset 62499968
+Group: 0 Thread 17 Global Thread 17 running on hwthread 24 - Vector length 3906248 Offset 66406216
+Group: 0 Thread 18 Global Thread 18 running on hwthread 9 - Vector length 3906248 Offset 70312464
+Group: 0 Thread 19 Global Thread 19 running on hwthread 25 - Vector length 3906248 Offset 74218712
+Group: 0 Thread 20 Global Thread 20 running on hwthread 10 - Vector length 3906248 Offset 78124960
+Group: 0 Thread 21 Global Thread 21 running on hwthread 26 - Vector length 3906248 Offset 82031208
+Group: 0 Thread 23 Global Thread 23 running on hwthread 27 - Vector length 3906248 Offset 89843704
+Group: 0 Thread 22 Global Thread 22 running on hwthread 11 - Vector length 3906248 Offset 85937456
+Group: 0 Thread 24 Global Thread 24 running on hwthread 12 - Vector length 3906248 Offset 93749952
+Group: 0 Thread 25 Global Thread 25 running on hwthread 28 - Vector length 3906248 Offset 97656200
+Group: 0 Thread 26 Global Thread 26 running on hwthread 13 - Vector length 3906248 Offset 101562448
+Group: 0 Thread 27 Global Thread 27 running on hwthread 29 - Vector length 3906248 Offset 105468696
+Group: 0 Thread 29 Global Thread 29 running on hwthread 30 - Vector length 3906248 Offset 113281192
+Group: 0 Thread 28 Global Thread 28 running on hwthread 14 - Vector length 3906248 Offset 109374944
+Group: 0 Thread 30 Global Thread 30 running on hwthread 15 - Vector length 3906248 Offset 117187440
+Group: 0 Thread 31 Global Thread 31 running on hwthread 31 - Vector length 3906248 Offset 121093688
+--------------------------------------------------------------------------------
+Cycles:			82704840
+CPU Clock:		2994347025
+Cycle Clock:		2994347025
+Time:			2.762033e-02 sec
+Iterations:		96
+Iterations per thread:	3
+Inner loop executions:	488281
+Size (Byte):		999999488
+Size per thread:	31249984
+Number of Flops:	0
+MFlops/s:		0.00
+Data volume (Byte):	2999998464
+MByte/s:		108615.61
+Cycles per update:	0.220546
+Cycles per cacheline:	1.764371
+Loads per update:	1
+Stores per update:	0
+Load bytes per element:	8
+Store bytes per elem.:	0
+Instructions:		515624752
+UOPs:			468749760
+--------------------------------------------------------------------------------
+[2025-08-09 23:43:47] 
+[2025-08-09 23:43:47] === Store Benchmark ===
+Running without Marker API. Activate Marker API with -m on commandline.
+Warning: Sanitizing vector length to a multiple of the loop stride 4 and thread count 32 from 125000000 elements (1000000000 bytes) to 124999936 elements (999999488 bytes)
+Allocate: Process running on hwthread 0 (Domain S0) - Vector length 124999936/999999488 Offset 0 Alignment 512
+Initialization: First thread in domain initializes the whole stream
+--------------------------------------------------------------------------------
+LIKWID MICRO BENCHMARK
+Test: store
+--------------------------------------------------------------------------------
+Using 1 work groups
+Using 32 threads
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+Group: 0 Thread 0 Global Thread 0 running on hwthread 0 - Vector length 3906248 Offset 0
+Group: 0 Thread 1 Global Thread 1 running on hwthread 16 - Vector length 3906248 Offset 3906248
+Group: 0 Thread 2 Global Thread 2 running on hwthread 1 - Vector length 3906248 Offset 7812496
+Group: 0 Thread 3 Global Thread 3 running on hwthread 17 - Vector length 3906248 Offset 11718744
+Group: 0 Thread 5 Global Thread 5 running on hwthread 18 - Vector length 3906248 Offset 19531240
+Group: 0 Thread 4 Global Thread 4 running on hwthread 2 - Vector length 3906248 Offset 15624992
+Group: 0 Thread 6 Global Thread 6 running on hwthread 3 - Vector length 3906248 Offset 23437488
+Group: 0 Thread 7 Global Thread 7 running on hwthread 19 - Vector length 3906248 Offset 27343736
+Group: 0 Thread 8 Global Thread 8 running on hwthread 4 - Vector length 3906248 Offset 31249984
+Group: 0 Thread 9 Global Thread 9 running on hwthread 20 - Vector length 3906248 Offset 35156232
+Group: 0 Thread 11 Global Thread 11 running on hwthread 21 - Vector length 3906248 Offset 42968728
+Group: 0 Thread 10 Global Thread 10 running on hwthread 5 - Vector length 3906248 Offset 39062480
+Group: 0 Thread 13 Global Thread 13 running on hwthread 22 - Vector length 3906248 Offset 50781224
+Group: 0 Thread 12 Global Thread 12 running on hwthread 6 - Vector length 3906248 Offset 46874976
+Group: 0 Thread 14 Global Thread 14 running on hwthread 7 - Vector length 3906248 Offset 54687472
+Group: 0 Thread 15 Global Thread 15 running on hwthread 23 - Vector length 3906248 Offset 58593720
+Group: 0 Thread 16 Global Thread 16 running on hwthread 8 - Vector length 3906248 Offset 62499968
+Group: 0 Thread 17 Global Thread 17 running on hwthread 24 - Vector length 3906248 Offset 66406216
+Group: 0 Thread 19 Global Thread 19 running on hwthread 25 - Vector length 3906248 Offset 74218712
+Group: 0 Thread 18 Global Thread 18 running on hwthread 9 - Vector length 3906248 Offset 70312464
+Group: 0 Thread 21 Global Thread 21 running on hwthread 26 - Vector length 3906248 Offset 82031208
+Group: 0 Thread 20 Global Thread 20 running on hwthread 10 - Vector length 3906248 Offset 78124960
+Group: 0 Thread 22 Global Thread 22 running on hwthread 11 - Vector length 3906248 Offset 85937456
+Group: 0 Thread 23 Global Thread 23 running on hwthread 27 - Vector length 3906248 Offset 89843704
+Group: 0 Thread 24 Global Thread 24 running on hwthread 12 - Vector length 3906248 Offset 93749952
+Group: 0 Thread 25 Global Thread 25 running on hwthread 28 - Vector length 3906248 Offset 97656200
+Group: 0 Thread 27 Global Thread 27 running on hwthread 29 - Vector length 3906248 Offset 105468696
+Group: 0 Thread 26 Global Thread 26 running on hwthread 13 - Vector length 3906248 Offset 101562448
+Group: 0 Thread 29 Global Thread 29 running on hwthread 30 - Vector length 3906248 Offset 113281192
+Group: 0 Thread 28 Global Thread 28 running on hwthread 14 - Vector length 3906248 Offset 109374944
+Group: 0 Thread 31 Global Thread 31 running on hwthread 31 - Vector length 3906248 Offset 121093688
+Group: 0 Thread 30 Global Thread 30 running on hwthread 15 - Vector length 3906248 Offset 117187440
+--------------------------------------------------------------------------------
+Cycles:			103416420
+CPU Clock:		2994145274
+Cycle Clock:		2994145274
+Time:			3.453955e-02 sec
+Iterations:		96
+Iterations per thread:	3
+Inner loop executions:	976562
+Size (Byte):		999999488
+Size per thread:	31249984
+Number of Flops:	0
+MFlops/s:		0.00
+Data volume (Byte):	2999998464
+MByte/s:		86856.92
+Cycles per update:	0.275777
+Cycles per cacheline:	2.206218
+Loads per update:	0
+Stores per update:	1
+Load bytes per element:	0
+Store bytes per elem.:	8
+Instructions:		656249684
+UOPs:			937499520
+--------------------------------------------------------------------------------
+[2025-08-09 23:43:49] 
+[2025-08-09 23:43:49] === Update Benchmark ===
+Running without Marker API. Activate Marker API with -m on commandline.
+Warning: Sanitizing vector length to a multiple of the loop stride 4 and thread count 32 from 125000000 elements (1000000000 bytes) to 124999936 elements (999999488 bytes)
+Allocate: Process running on hwthread 0 (Domain S0) - Vector length 124999936/999999488 Offset 0 Alignment 512
+Initialization: First thread in domain initializes the whole stream
+--------------------------------------------------------------------------------
+LIKWID MICRO BENCHMARK
+Test: update
+--------------------------------------------------------------------------------
+Using 1 work groups
+Using 32 threads
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+Group: 0 Thread 0 Global Thread 0 running on hwthread 0 - Vector length 3906248 Offset 0
+Group: 0 Thread 1 Global Thread 1 running on hwthread 16 - Vector length 3906248 Offset 3906248
+Group: 0 Thread 2 Global Thread 2 running on hwthread 1 - Vector length 3906248 Offset 7812496
+Group: 0 Thread 3 Global Thread 3 running on hwthread 17 - Vector length 3906248 Offset 11718744
+Group: 0 Thread 5 Global Thread 5 running on hwthread 18 - Vector length 3906248 Offset 19531240
+Group: 0 Thread 6 Global Thread 6 running on hwthread 3 - Vector length 3906248 Offset 23437488
+Group: 0 Thread 7 Global Thread 7 running on hwthread 19 - Vector length 3906248 Offset 27343736
+Group: 0 Thread 4 Global Thread 4 running on hwthread 2 - Vector length 3906248 Offset 15624992
+Group: 0 Thread 8 Global Thread 8 running on hwthread 4 - Vector length 3906248 Offset 31249984
+Group: 0 Thread 9 Global Thread 9 running on hwthread 20 - Vector length 3906248 Offset 35156232
+Group: 0 Thread 11 Global Thread 11 running on hwthread 21 - Vector length 3906248 Offset 42968728
+Group: 0 Thread 10 Global Thread 10 running on hwthread 5 - Vector length 3906248 Offset 39062480
+Group: 0 Thread 12 Global Thread 12 running on hwthread 6 - Vector length 3906248 Offset 46874976
+Group: 0 Thread 13 Global Thread 13 running on hwthread 22 - Vector length 3906248 Offset 50781224
+Group: 0 Thread 14 Global Thread 14 running on hwthread 7 - Vector length 3906248 Offset 54687472
+Group: 0 Thread 15 Global Thread 15 running on hwthread 23 - Vector length 3906248 Offset 58593720
+Group: 0 Thread 16 Global Thread 16 running on hwthread 8 - Vector length 3906248 Offset 62499968
+Group: 0 Thread 17 Global Thread 17 running on hwthread 24 - Vector length 3906248 Offset 66406216
+Group: 0 Thread 19 Global Thread 19 running on hwthread 25 - Vector length 3906248 Offset 74218712
+Group: 0 Thread 18 Global Thread 18 running on hwthread 9 - Vector length 3906248 Offset 70312464
+Group: 0 Thread 20 Global Thread 20 running on hwthread 10 - Vector length 3906248 Offset 78124960
+Group: 0 Thread 21 Global Thread 21 running on hwthread 26 - Vector length 3906248 Offset 82031208
+Group: 0 Thread 22 Global Thread 22 running on hwthread 11 - Vector length 3906248 Offset 85937456
+Group: 0 Thread 23 Global Thread 23 running on hwthread 27 - Vector length 3906248 Offset 89843704
+Group: 0 Thread 24 Global Thread 24 running on hwthread 12 - Vector length 3906248 Offset 93749952
+Group: 0 Thread 25 Global Thread 25 running on hwthread 28 - Vector length 3906248 Offset 97656200
+Group: 0 Thread 26 Global Thread 26 running on hwthread 13 - Vector length 3906248 Offset 101562448
+Group: 0 Thread 27 Global Thread 27 running on hwthread 29 - Vector length 3906248 Offset 105468696
+Group: 0 Thread 28 Global Thread 28 running on hwthread 14 - Vector length 3906248 Offset 109374944
+Group: 0 Thread 29 Global Thread 29 running on hwthread 30 - Vector length 3906248 Offset 113281192
+Group: 0 Thread 31 Global Thread 31 running on hwthread 31 - Vector length 3906248 Offset 121093688
+Group: 0 Thread 30 Global Thread 30 running on hwthread 15 - Vector length 3906248 Offset 117187440
+--------------------------------------------------------------------------------
+Cycles:			101155770
+CPU Clock:		2994195967
+Cycle Clock:		2994195967
+Time:			3.378395e-02 sec
+Iterations:		96
+Iterations per thread:	3
+Inner loop executions:	976562
+Size (Byte):		999999488
+Size per thread:	31249984
+Number of Flops:	0
+MFlops/s:		0.00
+Data volume (Byte):	5999996928
+MByte/s:		177599.03
+Cycles per update:	0.269749
+Cycles per cacheline:	2.157991
+Loads per update:	1
+Stores per update:	1
+Load bytes per element:	8
+Store bytes per elem.:	8
+Load/store ratio:	1.00
+Instructions:		1031249488
+UOPs:			1312499328
+--------------------------------------------------------------------------------
+[2025-08-09 23:43:50] 
+[2025-08-09 23:43:50] === Scale Benchmark ===
+Error: Unknown test case scale
+[2025-08-09 23:43:50] 
+[2025-08-09 23:43:50] === Multi-threaded STREAM Test ===
+Running without Marker API. Activate Marker API with -m on commandline.
+Warning: Sanitizing vector length to a multiple of the loop stride 4 and thread count 32 from 41666666 elements (333333328 bytes) to 41666560 elements (333332480 bytes)
+Allocate: Process running on hwthread 0 (Domain S0) - Vector length 41666560/333332480 Offset 0 Alignment 512
+Allocate: Process running on hwthread 0 (Domain S0) - Vector length 41666560/333332480 Offset 0 Alignment 512
+Allocate: Process running on hwthread 0 (Domain S0) - Vector length 41666560/333332480 Offset 0 Alignment 512
+Initialization: First thread in domain initializes the whole stream
+--------------------------------------------------------------------------------
+LIKWID MICRO BENCHMARK
+Test: stream
+--------------------------------------------------------------------------------
+Using 1 work groups
+Using 32 threads
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+Group: 0 Thread 0 Global Thread 0 running on hwthread 0 - Vector length 1302080 Offset 0
+Group: 0 Thread 1 Global Thread 1 running on hwthread 16 - Vector length 1302080 Offset 1302080
+Group: 0 Thread 3 Global Thread 3 running on hwthread 17 - Vector length 1302080 Offset 3906240
+Group: 0 Thread 2 Global Thread 2 running on hwthread 1 - Vector length 1302080 Offset 2604160
+Group: 0 Thread 4 Global Thread 4 running on hwthread 2 - Vector length 1302080 Offset 5208320
+Group: 0 Thread 6 Global Thread 6 running on hwthread 3 - Vector length 1302080 Offset 7812480
+Group: 0 Thread 5 Global Thread 5 running on hwthread 18 - Vector length 1302080 Offset 6510400
+Group: 0 Thread 7 Global Thread 7 running on hwthread 19 - Vector length 1302080 Offset 9114560
+Group: 0 Thread 8 Global Thread 8 running on hwthread 4 - Vector length 1302080 Offset 10416640
+Group: 0 Thread 9 Global Thread 9 running on hwthread 20 - Vector length 1302080 Offset 11718720
+Group: 0 Thread 11 Global Thread 11 running on hwthread 21 - Vector length 1302080 Offset 14322880
+Group: 0 Thread 10 Global Thread 10 running on hwthread 5 - Vector length 1302080 Offset 13020800
+Group: 0 Thread 13 Global Thread 13 running on hwthread 22 - Vector length 1302080 Offset 16927040
+Group: 0 Thread 12 Global Thread 12 running on hwthread 6 - Vector length 1302080 Offset 15624960
+Group: 0 Thread 14 Global Thread 14 running on hwthread 7 - Vector length 1302080 Offset 18229120
+Group: 0 Thread 15 Global Thread 15 running on hwthread 23 - Vector length 1302080 Offset 19531200
+Group: 0 Thread 17 Global Thread 17 running on hwthread 24 - Vector length 1302080 Offset 22135360
+Group: 0 Thread 16 Global Thread 16 running on hwthread 8 - Vector length 1302080 Offset 20833280
+Group: 0 Thread 18 Global Thread 18 running on hwthread 9 - Vector length 1302080 Offset 23437440
+Group: 0 Thread 19 Global Thread 19 running on hwthread 25 - Vector length 1302080 Offset 24739520
+Group: 0 Thread 21 Global Thread 21 running on hwthread 26 - Vector length 1302080 Offset 27343680
+Group: 0 Thread 20 Global Thread 20 running on hwthread 10 - Vector length 1302080 Offset 26041600
+Group: 0 Thread 23 Global Thread 23 running on hwthread 27 - Vector length 1302080 Offset 29947840
+Group: 0 Thread 22 Global Thread 22 running on hwthread 11 - Vector length 1302080 Offset 28645760
+Group: 0 Thread 25 Global Thread 25 running on hwthread 28 - Vector length 1302080 Offset 32552000
+Group: 0 Thread 24 Global Thread 24 running on hwthread 12 - Vector length 1302080 Offset 31249920
+Group: 0 Thread 27 Global Thread 27 running on hwthread 29 - Vector length 1302080 Offset 35156160
+Group: 0 Thread 26 Global Thread 26 running on hwthread 13 - Vector length 1302080 Offset 33854080
+Group: 0 Thread 28 Global Thread 28 running on hwthread 14 - Vector length 1302080 Offset 36458240
+Group: 0 Thread 29 Global Thread 29 running on hwthread 30 - Vector length 1302080 Offset 37760320
+Group: 0 Thread 30 Global Thread 30 running on hwthread 15 - Vector length 1302080 Offset 39062400
+Group: 0 Thread 31 Global Thread 31 running on hwthread 31 - Vector length 1302080 Offset 40364480
+--------------------------------------------------------------------------------
+Cycles:			89875200
+CPU Clock:		2994341764
+Cycle Clock:		2994341764
+Time:			3.001501e-02 sec
+Iterations:		96
+Iterations per thread:	3
+Inner loop executions:	325520
+Size (Byte):		999997440
+Size per thread:	31249920
+Number of Flops:	249999360
+MFlops/s:		8329.14
+Data volume (Byte):	2999992320
+MByte/s:		99949.73
+Cycles per update:	0.719003
+Cycles per cacheline:	5.752028
+Loads per update:	2
+Stores per update:	1
+Load bytes per element:	16
+Store bytes per elem.:	8
+Load/store ratio:	2.00
+Instructions:		593748497
+UOPs:			812497920
+--------------------------------------------------------------------------------
+[2025-08-09 23:43:52] === Benchmark Summary ===
+[2025-08-09 23:43:52] All benchmarks completed at Sat Aug  9 11:43:52 PM JST 2025
+[2025-08-09 23:43:52] Results saved to: likwid-memory-benchmark-20250809_234341.txt

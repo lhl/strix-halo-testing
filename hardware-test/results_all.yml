@@ -1,0 +1,108 @@
+BaselineInfo:
+  WebDBID: -1
+  TimeStamp: 20250809135239
+Version:
+  Major: 11
+  Minor: 0
+  Build: 1002
+  SpecialBuildName: ""
+  ptArchitecture: x86_64_linux
+Results:
+  Results Complete: true
+  NumTestProcesses: 32
+  CPU_INTEGER_MATH: 234008.40300000002
+  CPU_FLOATINGPOINT_MATH: 138668.68827308033
+  CPU_PRIME: 296.87902759951629
+  CPU_SORTING: 101862.91475640882
+  CPU_ENCRYPTION: 45354.511986404039
+  CPU_COMPRESSION: 797602.34470272495
+  CPU_SINGLETHREAD: 4272.8650567129234
+  CPU_PHYSICS: 6003.0116261622525
+  CPU_MATRIX_MULT_SSE: 61684.745139378843
+  CPU_mm: 5969.6274600614224
+  CPU_sse: 22323.188644917798
+  CPU_fma: 67087.969395010485
+  CPU_avx: 64399.926226362171
+  CPU_avx512: 92927.896291224941
+  m_CPU_enc_SHA: 57332869680.879753
+  m_CPU_enc_AES: 46954415914.448341
+  m_CPU_enc_ECDSA: 38385672686.638733
+  ME_ALLOC_S: 19656.591529967704
+  ME_READ_S: 38838.813020833331
+  ME_READ_L: 34486.138020833336
+  ME_WRITE: 29566.629557291668
+  ME_LARGE: 125117.86111111112
+  ME_LATENCY: 92.466689494547722
+  ME_THREADED: 125598.13818359375
+  SUMM_CPU: 64269.711930466918
+  SUMM_ME: 2661.9939719134527
+SystemInformation:
+  OSName: CachyOS
+  Kernel: 6.16.0-1-mainline
+  Device: ""
+  Processor: AMD RYZEN AI MAX+ 395 w/ Radeon 8060S
+  NumSockets: 1
+  Manufacturer: AuthenticAMD
+  NumCores: 16
+  NumLogicals: 32
+  CPUFrequency: 5187
+  Memory: 128085
+  MemModuleInfo:
+    iNumMemSticks: 8
+    DIMM 1:
+      manufacturer: Micron Technology
+      modulePartNo: MT62F4G32D8DV-023 WT
+      memType: LPDDR5
+      size: 16
+      clkspeed: 8000
+      moduleVoltage: 0.5
+    DIMM 2:
+      manufacturer: Micron Technology
+      modulePartNo: MT62F4G32D8DV-023 WT
+      memType: LPDDR5
+      size: 16
+      clkspeed: 8000
+      moduleVoltage: 0.5
+    DIMM 3:
+      manufacturer: Micron Technology
+      modulePartNo: MT62F4G32D8DV-023 WT
+      memType: LPDDR5
+      size: 16
+      clkspeed: 8000
+      moduleVoltage: 0.5
+    DIMM 4:
+      manufacturer: Micron Technology
+      modulePartNo: MT62F4G32D8DV-023 WT
+      memType: LPDDR5
+      size: 16
+      clkspeed: 8000
+      moduleVoltage: 0.5
+    DIMM 5:
+      manufacturer: Micron Technology
+      modulePartNo: MT62F4G32D8DV-023 WT
+      memType: LPDDR5
+      size: 16
+      clkspeed: 8000
+      moduleVoltage: 0.5
+    DIMM 6:
+      manufacturer: Micron Technology
+      modulePartNo: MT62F4G32D8DV-023 WT
+      memType: LPDDR5
+      size: 16
+      clkspeed: 8000
+      moduleVoltage: 0.5
+    DIMM 7:
+      manufacturer: Micron Technology
+      modulePartNo: MT62F4G32D8DV-023 WT
+      memType: LPDDR5
+      size: 16
+      clkspeed: 8000
+      moduleVoltage: 0.5
+    DIMM 8:
+      manufacturer: Micron Technology
+      modulePartNo: MT62F4G32D8DV-023 WT
+      memType: LPDDR5
+      size: 16
+      clkspeed: 8000
+      moduleVoltage: 0.5
+Checksum: F5C265D4027170ECAB50B395510749F6BE24F1B9
