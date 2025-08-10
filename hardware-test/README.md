@@ -1,14 +1,41 @@
-CPU Memory Bandwidth is about half of the max MBW (GMI link limitations?)
+# Strix Halo Hardware Testing
 
-Likwid:
+## Summary
+
+Full `hw-probe`: https://linux-hardware.org/?probe=6cace57e50
+
+GeekBench:
+- CPU: https://browser.geekbench.com/v6/cpu/13245806
+- RADV: https://browser.geekbench.com/v6/compute/4589439
+- AMDVLK: https://browser.geekbench.com/v6/compute/4589426
+
+
+### CPU MBW
+CPU Memory Bandwidth is about half of the max MBW available to the GPU...
+
+Primary testing with `likwid`:
 ```
-213:MByte/s:            101478.93
-285:MByte/s:            99972.51
-358:MByte/s:            100355.00
-428:MByte/s:            108615.61
-497:MByte/s:            86856.92
-566:MByte/s:            177599.03
-641:MByte/s:            99949.73
+Test: copy
+MByte/s:                101478.93
+
+Test: stream
+MByte/s:                99972.51
+
+Test: triad
+MByte/s:                100355.00
+
+Test: load
+MByte/s:                108615.61
+
+Test: store
+MByte/s:                86856.92
+
+Test: update
+MByte/s:                177599.03
+
+[2025-08-09 23:43:50] === Multi-threaded STREAM Test ===
+Test: stream
+MByte/s:                99949.73
 ```
 Passmark:
 ```
@@ -20,6 +47,9 @@ Passmark:
   ME_LATENCY: 92.466689494547722
   ME_THREADED: 125598.13818359375
 ```
+- Submitted run: https://www.passmark.com/baselines/V11/display.php?id=510063956264
+
+
 
 This seems plausible... https://chatgpt.com/share/68979a63-09c8-8012-8b07-513780f6d1db
 ```

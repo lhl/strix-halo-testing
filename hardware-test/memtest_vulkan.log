@@ -42,3 +42,81 @@ use Ctrl+C to stop it when you decide it's enough
     554 iteration. Passed 30.0352 seconds  written: 3262.5GB 229.2GB/sec        checked: 3425.6GB 216.8GB/sec
     599 iteration. Passed 30.0097 seconds  written: 3262.5GB 229.3GB/sec        checked: 3425.6GB 217.1GB/sec
     644 iteration. Passed 30.0049 seconds  written: 3262.5GB 229.5GB/sec        checked: 3425.6GB 216.9GB/sec
+Tester console logging started at 2025-07-29T14:31:22.742588Z
+
+1: Bus=0xC3:00 DevId=0x1586   79GB Radeon 8060S Graphics
+Tester worker logging started at 2025-07-29T14:31:22.839542Z
+Standard 5-minute test of 1: Bus=0xC3:00 DevId=0x1586   79GB Radeon 8060S Graphics
+      1 iteration. Passed  0.6745 seconds  written:   68.9GB 214.7GB/sec        checked:   72.5GB 204.9GB/sec
+      3 iteration. Passed  1.3518 seconds  written:  137.8GB 215.4GB/sec        checked:  145.0GB 203.6GB/sec
+     11 iteration. Passed  5.4121 seconds  written:  551.0GB 214.9GB/sec        checked:  580.0GB 203.6GB/sec
+     56 iteration. Passed 30.4277 seconds  written: 3099.4GB 215.2GB/sec        checked: 3262.5GB 203.6GB/sec
+    101 iteration. Passed 30.4181 seconds  written: 3099.4GB 215.2GB/sec        checked: 3262.5GB 203.7GB/sec
+    146 iteration. Passed 30.4382 seconds  written: 3099.4GB 215.0GB/sec        checked: 3262.5GB 203.6GB/sec
+    191 iteration. Passed 30.4201 seconds  written: 3099.4GB 215.1GB/sec        checked: 3262.5GB 203.8GB/sec
+    236 iteration. Passed 30.4362 seconds  written: 3099.4GB 215.2GB/sec        checked: 3262.5GB 203.5GB/sec
+    281 iteration. Passed 30.4166 seconds  written: 3099.4GB 215.2GB/sec        checked: 3262.5GB 203.7GB/sec
+    326 iteration. Passed 30.4324 seconds  written: 3099.4GB 215.0GB/sec        checked: 3262.5GB 203.7GB/sec
+    371 iteration. Passed 30.4028 seconds  written: 3099.4GB 215.4GB/sec        checked: 3262.5GB 203.8GB/sec
+    416 iteration. Passed 30.4137 seconds  written: 3099.4GB 215.1GB/sec        checked: 3262.5GB 203.8GB/sec
+Standard 5-minute test PASSed! Just press Ctrl+C unless you plan long test run.
+Extended endless test started; testing more than 2 hours is usually unneeded
+use Ctrl+C to stop it when you decide it's enough
+    506 iteration. Passed 30.3864 seconds  written: 3099.4GB 215.5GB/sec        checked: 3262.5GB 203.9GB/sec
+Tester console logging started at 2025-07-29T14:44:25.954634Z
+
+1: Bus=0xC3:00 DevId=0x1586   79GB Radeon 8060S Graphics
+Tester worker logging started at 2025-07-29T14:44:26.046314Z
+Standard 5-minute test of 1: Bus=0xC3:00 DevId=0x1586   79GB Radeon 8060S Graphics
+      1 iteration. Passed  0.6778 seconds  written:   68.9GB 214.0GB/sec        checked:   72.5GB 203.7GB/sec
+      3 iteration. Passed  1.3553 seconds  written:  137.8GB 214.6GB/sec        checked:  145.0GB 203.3GB/sec
+     11 iteration. Passed  5.4158 seconds  written:  551.0GB 214.6GB/sec        checked:  580.0GB 203.7GB/sec
+     56 iteration. Passed 30.4001 seconds  written: 3099.4GB 215.3GB/sec        checked: 3262.5GB 203.8GB/sec
+    101 iteration. Passed 30.3484 seconds  written: 3099.4GB 215.7GB/sec        checked: 3262.5GB 204.2GB/sec
+    146 iteration. Passed 30.4200 seconds  written: 3099.4GB 215.2GB/sec        checked: 3262.5GB 203.7GB/sec
+    191 iteration. Passed 30.4156 seconds  written: 3099.4GB 215.2GB/sec        checked: 3262.5GB 203.7GB/sec
+    236 iteration. Passed 30.4410 seconds  written: 3099.4GB 214.9GB/sec        checked: 3262.5GB 203.7GB/sec
+    281 iteration. Passed 30.4458 seconds  written: 3099.4GB 214.9GB/sec        checked: 3262.5GB 203.6GB/sec
+    326 iteration. Passed 30.4225 seconds  written: 3099.4GB 215.0GB/sec        checked: 3262.5GB 203.8GB/sec
+    371 iteration. Passed 30.4241 seconds  written: 3099.4GB 215.2GB/sec        checked: 3262.5GB 203.6GB/sec
+    416 iteration. Passed 30.4072 seconds  written: 3099.4GB 215.2GB/sec        checked: 3262.5GB 203.8GB/sec
+Standard 5-minute test PASSed! Just press Ctrl+C unless you plan long test run.
+Extended endless test started; testing more than 2 hours is usually unneeded
+use Ctrl+C to stop it when you decide it's enough
+Tester console logging started at 2025-08-08T03:00:03.732075Z
+
+1: Bus=0xC3:00 DevId=0x1586   79GB Radeon 8060S Graphics
+Tester worker logging started at 2025-08-08T03:00:03.782347Z
+Standard 5-minute test of 1: Bus=0xC3:00 DevId=0x1586   79GB Radeon 8060S Graphics
+      1 iteration. Passed  0.6624 seconds  written:   68.9GB 215.7GB/sec        checked:   72.5GB 211.3GB/sec
+      3 iteration. Passed  1.3211 seconds  written:  137.8GB 216.1GB/sec        checked:  145.0GB 212.1GB/sec
+     11 iteration. Passed  5.2780 seconds  written:  551.0GB 216.7GB/sec        checked:  580.0GB 212.0GB/sec
+     57 iteration. Passed 30.3488 seconds  written: 3168.2GB 216.8GB/sec        checked: 3335.0GB 211.9GB/sec
+    103 iteration. Passed 30.3565 seconds  written: 3168.2GB 216.8GB/sec        checked: 3335.0GB 211.9GB/sec
+    149 iteration. Passed 30.3615 seconds  written: 3168.2GB 216.7GB/sec        checked: 3335.0GB 211.9GB/sec
+Tester console logging started at 2025-08-08T03:05:15.872005Z
+
+1: Bus=0xC3:00 DevId=0x1586   79GB Radeon 8060S Graphics
+Tester worker logging started at 2025-08-08T03:05:15.975544Z
+Standard 5-minute test of 1: Bus=0xC3:00 DevId=0x1586   79GB Radeon 8060S Graphics
+      1 iteration. Passed  0.6799 seconds  written:   68.9GB 214.5GB/sec        checked:   72.5GB 202.1GB/sec
+      3 iteration. Passed  1.3620 seconds  written:  137.8GB 213.6GB/sec        checked:  145.0GB 202.2GB/sec
+     11 iteration. Passed  5.4501 seconds  written:  551.0GB 213.5GB/sec        checked:  580.0GB 202.1GB/sec
+     56 iteration. Passed 30.6647 seconds  written: 3099.4GB 213.5GB/sec        checked: 3262.5GB 202.1GB/sec
+Tester console logging started at 2025-08-08T03:06:23.832438Z
+
+1: Bus=0xC3:00 DevId=0x1586   79GB Radeon 8060S Graphics (RADV GFX1151)
+Tester worker logging started at 2025-08-08T03:06:23.859242Z
+Standard 5-minute test of 1: Bus=0xC3:00 DevId=0x1586   79GB Radeon 8060S Graphics (RADV GFX1151)
+      1 iteration. Passed  0.6737 seconds  written:   72.5GB 228.2GB/sec        checked:   76.1GB 213.8GB/sec
+      3 iteration. Passed  1.3449 seconds  written:  145.0GB 228.4GB/sec        checked:  152.2GB 214.4GB/sec
+     11 iteration. Passed  5.3863 seconds  written:  580.0GB 227.8GB/sec        checked:  609.0GB 214.4GB/sec
+Tester console logging started at 2025-08-08T03:07:43.099330Z
+
+1: Bus=0xC3:00 DevId=0x1586   79GB Radeon 8060S Graphics (RADV GFX1151)
+Tester worker logging started at 2025-08-08T03:07:43.122700Z
+Standard 5-minute test of 1: Bus=0xC3:00 DevId=0x1586   79GB Radeon 8060S Graphics (RADV GFX1151)
+      1 iteration. Passed  0.6527 seconds  written:   72.5GB 234.7GB/sec        checked:   76.1GB 221.4GB/sec
+      3 iteration. Passed  1.3058 seconds  written:  145.0GB 234.6GB/sec        checked:  152.2GB 221.4GB/sec
+     11 iteration. Passed  5.2309 seconds  written:  580.0GB 234.4GB/sec        checked:  609.0GB 221.0GB/sec
+     57 iteration. Passed 30.1058 seconds  written: 3335.0GB 234.5GB/sec        checked: 3501.8GB 220.4GB/sec
