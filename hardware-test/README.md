@@ -9,6 +9,28 @@ GeekBench:
 - RADV: https://browser.geekbench.com/v6/compute/4589439
 - AMDVLK: https://browser.geekbench.com/v6/compute/4589426
 
+### GPU MBW
+This is what we mostly care about for inference. The theoretical maximum limit is 256GiB/s (LPDDR5x-8000 x 256-bit bus).
+
+Using `memtest_vulkan` we get decent performance with AMDVLK out of the box:
+```
+     11 iteration. Passed  5.4158 seconds  written:  551.0GB 214.6GB/sec        checked:  580.0GB 203.7GB/sec
+```
+
+We can get a decent bump with `amd_iommu=off` set as a kernel option (other settings like `iommu=pt` don't give you the benefit, so if you need IOMMU for VFIO/passthrough, etc you probably can't use this:
+```
+     11 iteration. Passed  5.2780 seconds  written:  551.0GB 216.7GB/sec        checked:  580.0GB 212.0GB/sec
+```
+
+Mesa RADV performs about the same:
+```
+     11 iteration. Passed  5.3863 seconds  written:  580.0GB 227.8GB/sec        checked:  609.0GB 214.4GB/sec
+```
+
+You *can* however, get another bump with `tuned` changed from the default `balanced` to `accelerator-performance`:
+```
+     11 iteration. Passed  5.2309 seconds  written:  580.0GB 234.4GB/sec        checked:  609.0GB 221.0GB/sec
+```
 
 ### CPU MBW
 CPU Memory Bandwidth is about half of the max MBW available to the GPU...
