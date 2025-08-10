@@ -12,6 +12,8 @@ GeekBench:
 ### GPU MBW
 This is what we mostly care about for inference. The theoretical maximum limit is 256GiB/s (LPDDR5x-8000 x 256-bit bus).
 
+The maximum MBW I've gotten so far with GPU testing is 221 GB/s with Mesa RADV, 86% of the theoretical bus limit, which is pretty good! 
+
 Using `memtest_vulkan` we get decent performance with AMDVLK out of the box:
 ```
      11 iteration. Passed  5.4158 seconds  written:  551.0GB 214.6GB/sec        checked:  580.0GB 203.7GB/sec
