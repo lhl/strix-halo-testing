@@ -1,0 +1,30 @@
+❯ sudo -s                                                                                                                  (base)
+
+❯ echo 4000 > /proc/sys/vm/nr_hugepages
+❯ mlc --idle_latency
+Intel(R) Memory Latency Checker - v3.11b
+Command line parameters: --idle_latency
+
+Using buffer size of 1800.000MiB
+Each iteration took 453.5 base frequency clocks (       151.5   ns)
+
+❯ echo 32000 > /proc/sys/vm/nr_hugepages
+❯ mlc --idle_latency
+Intel(R) Memory Latency Checker - v3.11b
+Command line parameters: --idle_latency
+
+Using buffer size of 1800.000MiB
+Each iteration took 453.5 base frequency clocks (       151.4   ns)
+
+❯ mlc --bandwidth_matrix
+Intel(R) Memory Latency Checker - v3.11b
+Command line parameters: --bandwidth_matrix
+
+Using buffer size of 100.000MiB/thread for reads and an additional 100.000MiB/thread for writes
+Measuring Memory Bandwidths between nodes within system
+Bandwidths are in MB/sec (1 MB/sec = 1,000,000 Bytes/sec)
+Using all the threads from each core if Hyper-threading is enabled
+Using Read-only traffic type
+                Numa node
+Numa node            0
+       0        117876.8
