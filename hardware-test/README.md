@@ -13,6 +13,22 @@ GeekBench:
 ### CPU MBW
 CPU Memory Bandwidth is about half of the max MBW available to the GPU...
 
+Transfers between CPU/GPU on ROCm are about 84-85 GB/s:
+```
+Device: 0,  AMD RYZEN AI MAX+ 395 w/ Radeon 8060S
+Device: 1,  AMD Radeon Graphics,  GPU-XX,  c3:0.0
+
+Unidirectional copy peak bandwidth GB/s
+D/D       0           1           
+0         N/A         83.715      
+1         85.476      212.588     
+
+Bidirectional copy peak bandwidth GB/s
+D/D       0           1           
+0         N/A         84.706      
+1         84.706      N/A         
+```
+
 Primary testing with `likwid`:
 ```
 Test: copy
@@ -50,8 +66,7 @@ Passmark:
 - Submitted run: https://www.passmark.com/baselines/V11/display.php?id=510063956264
 
 
-
-This seems plausible... https://chatgpt.com/share/68979a63-09c8-8012-8b07-513780f6d1db
+This explanation seems plausible... https://chatgpt.com/share/68979a63-09c8-8012-8b07-513780f6d1db
 ```
 On Zen 5, each L3 “cluster” (8 cores) has a 32 bytes/cycle fabric link to the rest of the SoC. On mobile parts that link is 32 B/cycle in both directions and typically runs around ~2 GHz. That’s ~64 GB/s read per cluster. A 16‑core Strix Halo CCD has two clusters ⇒ ~128 GB/s aggregate peak for CPU reads. Your ~119 GB/s is ~93% of that theoretical cap, so you’re basically hitting the CCD→SoC link ceiling, not DRAM.
 
