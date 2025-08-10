@@ -4,6 +4,9 @@
 
 Full `hw-probe`: https://linux-hardware.org/?probe=6cace57e50
 
+Passmark submitted run:
+- https://www.passmark.com/baselines/V11/display.php?id=510063956264
+
 GeekBench:
 - CPU: https://browser.geekbench.com/v6/cpu/13245806
 - RADV: https://browser.geekbench.com/v6/compute/4589439
@@ -12,7 +15,7 @@ GeekBench:
 ### GPU MBW
 This is what we mostly care about for inference. The theoretical maximum limit is 256GiB/s (LPDDR5x-8000 x 256-bit bus).
 
-The maximum MBW I've gotten so far with GPU testing is 221 GB/s with Mesa RADV, 86% of the theoretical bus limit, which is pretty good! 
+The maximum MBW I've gotten so far with GPU testing is 221 GB/s with Mesa RADV, 86% of the theoretical bus limit, which is pretty good!
 
 Using `memtest_vulkan` we get decent performance with AMDVLK out of the box:
 ```
@@ -35,7 +38,7 @@ You *can* however, get another bump with `tuned` changed from the default `balan
 ```
 
 ### CPU MBW
-CPU Memory Bandwidth is about half of the max MBW available to the GPU...
+CPU Memory Bandwidth is note so good, about half of the max MBW bus...
 
 Transfers between CPU/GPU on ROCm are about 84-85 GB/s:
 ```
@@ -87,17 +90,34 @@ Passmark:
   ME_LATENCY: 92.466689494547722
   ME_THREADED: 125598.13818359375
 ```
-- Submitted run: https://www.passmark.com/baselines/V11/display.php?id=510063956264
+
+Intel MLC:
+```
+❯ echo 32000 > /proc/sys/vm/nr_hugepages
+❯ mlc --idle_latency
+Using buffer size of 1800.000MiB
+Each iteration took 453.5 base frequency clocks (       151.4   ns)
+
+❯ mlc --bandwidth_matrix
+Using buffer size of 100.000MiB/thread for reads and an additional 100.000MiB/thread for writes
+Measuring Memory Bandwidths between nodes within system
+Bandwidths are in MB/sec (1 MB/sec = 1,000,000 Bytes/sec)
+Using all the threads from each core if Hyper-threading is enabled
+Using Read-only traffic type
+                Numa node
+Numa node            0
+       0        117876.8
+```
 
 
 This explanation seems plausible... https://chatgpt.com/share/68979a63-09c8-8012-8b07-513780f6d1db
-```
-On Zen 5, each L3 “cluster” (8 cores) has a 32 bytes/cycle fabric link to the rest of the SoC. On mobile parts that link is 32 B/cycle in both directions and typically runs around ~2 GHz. That’s ~64 GB/s read per cluster. A 16‑core Strix Halo CCD has two clusters ⇒ ~128 GB/s aggregate peak for CPU reads. Your ~119 GB/s is ~93% of that theoretical cap, so you’re basically hitting the CCD→SoC link ceiling, not DRAM.
 
-Strix Halo’s “sea‑of‑wires” connection replaces the old GMI SERDES, but the per‑cluster width still matters. AMD’s own deep‑dive explains the 32 B/cycle links and the low‑latency fan‑out; the key point is that the GPU and memory controllers sit on the big SoC die while the CPU cores sit on the CCD, so CPU streaming ultimately funnels through those 32 B/cycle cluster links.
+> On Zen 5, each L3 “cluster” (8 cores) has a 32 bytes/cycle fabric link to the rest of the SoC. On mobile parts that link is 32 B/cycle in both directions and typically runs around ~2 GHz. That’s ~64 GB/s read per cluster. A 16‑core Strix Halo CCD has two clusters ⇒ ~128 GB/s aggregate peak for CPU reads. Your ~119 GB/s is ~93% of that theoretical cap, so you’re basically hitting the CCD→SoC link ceiling, not DRAM.
+>
+> Strix Halo’s “sea‑of‑wires” connection replaces the old GMI SERDES, but the per‑cluster width still matters. AMD’s own deep‑dive explains the 32 B/cycle links and the low‑latency fan‑out; the key point is that the GPU and memory controllers sit on the big SoC die while the CPU cores sit on the CCD, so CPU streaming ultimately funnels through those 32 B/cycle cluster links.
 Chips and Cheese
+> 
+> That’s why your GPU test (Vulkan membench) gets ~230–235 GB/s — the iGPU talks to LPDDR5X directly (and can leverage MALL/last‑level cache structures on the SoC die), whereas the CPU can’t allocate into that GPU cache and is gated by the cluster links.
 
-That’s why your GPU test (Vulkan membench) gets ~230–235 GB/s — the iGPU talks to LPDDR5X directly (and can leverage MALL/last‑level cache structures on the SoC die), whereas the CPU can’t allocate into that GPU cache and is gated by the cluster links.
-```
 - https://chipsandcheese.com/p/amds-ryzen-9950x-zen-5-on-desktop
 - https://chipsandcheese.com/p/amds-strix-halo-under-the-hood
