@@ -352,7 +352,7 @@ patch_torchaudio_kineto
 # Stage: Build with conditional stages
 BUILD_ARGS=(
     --pytorch-rocm-arch gfx1151
-    --index-url https://d2awnip2yjpvqn.cloudfront.net/v2/gfx110X-dgpu/
+    --index-url https://d2awnip2yjpvqn.cloudfront.net/v2/gfx1151/
     --output-dir $HOME/tmp/pyout
     --clean
 )
@@ -408,6 +408,6 @@ show_stage "Build Complete"
 echo "Built wheels are in: $HOME/tmp/pyout"
 echo ""
 echo "To install:"
-echo "  pip install $HOME/tmp/pyout/torch-*.whl"
-echo "  pip install $HOME/tmp/pyout/torchaudio-*.whl"  
-echo "  pip install $HOME/tmp/pyout/torchvision-*.whl"
+echo "  pip install $HOME/tmp/pyout/torch-*.whl --force-reinstall --no-deps"
+echo "  pip install $HOME/tmp/pyout/torchaudio-*.whl --force-reinstall --no-deps"  
+echo "  pip install $HOME/tmp/pyout/torchvision-*.whl --force-reinstall --no-deps"
