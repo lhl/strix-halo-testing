@@ -1,0 +1,109 @@
+Goal: make PyTorch build and run against AOTriton HEAD
+
+Background
+- AOTriton v3 FlashAttention API at HEAD changed some parameter types from TensorView<N> to LazyTensor<N>.
+- In particular, v3::flash::attn_bwd_params now defines:
+  - D: LazyTensor<2> (mutable)
+  - DQ_ACC: LazyTensor<4> (mutable) — present in headers; only use if you actually populate it
+- Current PyTorch ROCm code (mha_all_aot.hip) still assigns TensorView to these fields, e.g.:
+  params.D = mk_aotensor<2>(delta, "delta");
+  which fails to compile with HEAD headers.
+
+High‑level plan
+1) Allow building against AOTriton HEAD by adapting the PyTorch ROCm FlashAttention adapter to produce LazyTensor when required, while remaining source‑compatible with older AOTriton.
+2) Change only the v3 code paths; v2 calls keep using TensorView.
+3) Keep build integration flexible (either preinstalled HEAD via AOTRITON_INSTALLED_PREFIX or ExternalProject.
+
+Files to modify
+- `aten/src/ATen/native/transformers/hip/aotriton_adapter.h` (add LazyTensor helpers)
+- `aten/src/ATen/native/transformers/hip/flash_attn/aot/mha_all_aot.hip` (use the new helper for v3 params.D; optionally free)
+- Build pin (optional): stop pinning or update pin to desired HEAD when building AOTriton
+
+Adapter changes (aotriton_adapter.h)
+- Add a small cookie type and acquire/dispose functions that conform to aotriton::LazyTensor<Rank> expectations.
+- Reuse existing `mk_aotensor<Rank>` to construct TensorView on demand in `acquire_lazy`.
+- Provide `mk_lazy_aotensor<Rank>` to create the LazyTensor wrapper.
+- Optionally add a helper that assigns either LazyTensor or TensorView depending on the field’s actual type.
+
+Example (drop into namespace `sdp::aotriton_adapter`) — illustrative only:
+
+  template<int Rank>
+  struct LazyCookie {
+    at::Tensor t;
+    std::string name;
+  };
+
+  template<int Rank>
+  static aotriton::TensorView<Rank> acquire_lazy(void* cookie) {
+    auto* c = static_cast<LazyCookie<Rank>*>(cookie);
+    return mk_aotensor<Rank>(c->t, c->name);
+  }
+
+  template<int Rank>
+  static void dispose_lazy(void* cookie) {
+    delete static_cast<LazyCookie<Rank>*>(cookie);
+  }
+
+  template<int Rank>
+  inline aotriton::LazyTensor<Rank>
+  mk_lazy_aotensor(const at::Tensor& t, std::string_view name) {
+    auto* c = new LazyCookie<Rank>{t, std::string(name)};
+    aotriton::LazyTensor<Rank> lt;
+    lt.cookie  = c;
+    lt.acquire = &acquire_lazy<Rank>;
+    lt.dispose = &dispose_lazy<Rank>;
+    return lt;
+  }
+
+  // Optional: unified assignment that compiles with both old/new AOTriton
+  template<typename DField>
+  inline void set_D_field(DField& D, const at::Tensor& delta) {
+    if constexpr (std::is_same_v<std::decay_t<DField>, aotriton::LazyTensor<2>>) {
+      D = mk_lazy_aotensor<2>(delta, "delta");
+    } else {
+      D = mk_aotensor<2>(delta, "delta");
+    }
+  }
+
+Call‑site changes (mha_all_aot.hip)
+- Only inside the v3 API path(s), change D assignment from TensorView to LazyTensor.
+- Before (HEAD fails):
+  params.D = mk_aotensor<2>(delta, "delta");
+- After (HEAD works, older still OK if you use the helper):
+  // Direct
+  params.D = sdp::aotriton_adapter::mk_lazy_aotensor<2>(delta, "delta");
+  // Or unified
+  sdp::aotriton_adapter::set_D_field(params.D, delta);
+
+- After the AOTriton call returns, optionally free the cookie to be tidy:
+  if constexpr (std::is_same_v<decltype(params.D), aotriton::LazyTensor<2>>) {
+    params.D.free();
+  }
+
+- If you use DQ_ACC (fp32 accumulator) with HEAD, handle similarly with `<4>` rank and free it when done.
+
+Compatibility strategies
+- Preferred: use the `set_D_field` helper with `if constexpr` on the deduced field type; this compiles cleanly whether the field is `TensorView<2>` (older) or `LazyTensor<2>` (HEAD).
+- Alternative: preprocessor guard using `__has_include(<aotriton/flash.h>)` + macro defined in AOTriton headers to detect LazyTensor fields, then choose code branches. The template method avoids reliance on AOTriton version macros.
+
+Build integration
+- Preinstalled AOTriton (recommended): build/install AOTriton HEAD somewhere and set `AOTRITON_INSTALLED_PREFIX` to that install root before building PyTorch. The existing `aotriton.cmake` logic will link to `${AOTRITON_INSTALLED_PREFIX}/lib/libaotriton_v2.so` and use headers from `${AOTRITON_INSTALLED_PREFIX}/include`.
+- ExternalProject (alternative): update the `GIT_TAG` of AOTriton to the desired HEAD commit in `cmake/External/aotriton.cmake`.
+- Keep ROCm arch/env as is (`PYTORCH_ROCM_ARCH=gfx1151` etc.).
+
+Sanity checks
+- Build AOTriton HEAD and PyTorch with `USE_FLASH_ATTENTION=1` and `USE_MEM_EFF_ATTENTION=1`.
+- Run a minimal SDPA FlashAttention forward/backward test on gfx1151 and compare against reference (tolerances for fp16/bf16).
+- Confirm no leaks: if you created LazyTensors, call `.free()` after the AOTriton call (safe to no‑op if acquire/ dispose were not used).
+
+Notes / gotchas
+- The LazyTensor interface puts cookie lifetime in the host code’s hands; failure to call `.free()` isn’t catastrophic in short‑lived ops but is best avoided.
+- Library name remains `libaotriton_v2.so` at HEAD; the change is in header API (types), not the SONAME.
+- If you also support Windows, keep the existing DLL/ import‑lib logic; no change required for this LazyTensor swap.
+
+Summary of required edits
+- Add LazyTensor helpers to `aotriton_adapter.h`.
+- Replace v3 `params.D = mk_aotensor<2>(...)` with either `mk_lazy_aotensor<2>` or a unified `set_D_field` call.
+- Optionally free `params.D` afterwards.
+- Ensure the build uses AOTriton HEAD headers (via `AOTRITON_INSTALLED_PREFIX` or ExternalProject GIT_TAG).
+
