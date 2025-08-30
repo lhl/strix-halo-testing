@@ -72,13 +72,18 @@ echo ""
 echo "=== Installing TheRock ROCm ==="
 python -m pip install \
   --index-url https://d2awnip2yjpvqn.cloudfront.net/v2/gfx1151/ \
-  rocm[libraries,devel] -U
+  rocm[libraries,devel] -U --force-reinstall
 
 echo ""
 echo "=== Installing TheRock PyTorch ==="
 python -m pip install \
   --index-url https://d2awnip2yjpvqn.cloudfront.net/v2/gfx1151/ \
-  torch -U
+  torch -U --force-reinstall
+
+# if we want FA
+# python -m pip install \
+#  --index-url https://d2awnip2yjpvqn.cloudfront.net/v2/gfx110X-dgpu/ \
+#  torch torchaudio torchvision -U --force-reinstall
 
 # Step 5: Test PyTorch installation
 echo ""
