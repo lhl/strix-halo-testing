@@ -178,10 +178,25 @@ export USE_FLASH_ATTENTION=1
 export USE_MEM_EFF_ATTENTION=1
 export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
 
-# Disable distributed training for single GPU builds (avoids NCCL/RCCL issues)
-export USE_DISTRIBUTED=0
-export USE_NCCL=0
+# Enable torch.distributed with Gloo backend (CPU) for import compatibility
+# This keeps ROCm compute enabled while avoiding RCCL/NCCL requirements.
+export USE_DISTRIBUTED=1
+export USE_GLOO=1
 export USE_RCCL=0
+export USE_NCCL=0
+# Avoid attempting IB verbs support when using Gloo-only
+export USE_IBVERBS=0
+
+# Disable ROCm SMI (librocm_smi64) linkage to avoid rsmi_* unresolved symbols when
+# the SMI library is not present in the SDK/runtime path.
+export USE_ROCM_SMI=0
+
+# Also force-disable via CMake to cover differing option names across versions
+export CMAKE_ARGS="${CMAKE_ARGS} -DUSE_ROCM_SMI=OFF -DROCM_USE_SMI=OFF -DROCM_ENABLE_SMI=OFF -DROCM_SMI_SUPPORT=OFF -DUSE_RSMI=OFF -DATEN_USE_RSMI=OFF -DATEN_WITH_RSMI=OFF"
+
+# Belt-and-suspenders: force the macros off in compilation too
+export CXXFLAGS="${CXXFLAGS} -DUSE_ROCM_SMI=0 -DUSE_RSMI=0 -DATEN_USE_RSMI=0"
+export CFLAGS="${CFLAGS} -DUSE_ROCM_SMI=0 -DUSE_RSMI=0 -DATEN_USE_RSMI=0"
 
 # Disable CUDA since we're building for ROCm
 export USE_CUDA=0
@@ -348,6 +363,98 @@ patch_torchaudio_kineto() {
 }
 
 patch_torchaudio_kineto
+
+# Patch gloo to include <cstdint> for fixed-width integer types on some toolchains
+patch_gloo_cstdint() {
+    local header_file="$PYTORCH_BUILD_DIR/pytorch/third_party/gloo/gloo/types.h"
+    if [ ! -f "$header_file" ]; then
+        echo "Gloo types.h not found (skipping patch): $header_file"
+        return 0
+    fi
+    # Skip if already patched
+    if grep -q "#include <cstdint>" "$header_file"; then
+        echo "Gloo types.h already includes <cstdint>"
+        return 0
+    fi
+    # Insert <cstdint> include after the common header include
+    local tmp_file
+    tmp_file="${header_file}.tmp.$$"
+    awk '
+        BEGIN{inserted=0}
+        {
+          print $0
+          if (!inserted && $0 ~ /#include\s+\"gloo\/common\/common.h\"/) {
+            print "#include <cstdint>";
+            inserted=1;
+          }
+        }
+        END{ if (!inserted) { exit 1 } }
+    ' "$header_file" > "$tmp_file" || {
+        echo "Failed to patch gloo/types.h to include <cstdint>; please add it manually." >&2
+        rm -f "$tmp_file"
+        return 1
+    }
+    mv "$tmp_file" "$header_file"
+    echo "Patched: $header_file (added <cstdint>)"
+}
+
+patch_gloo_cstdint
+
+# Patch out any ROCm SMI usages in HIP sources if present
+patch_disable_rsmi_code() {
+    local root="$PYTORCH_BUILD_DIR/pytorch"
+    if [ ! -d "$root" ]; then
+        echo "PyTorch source not found for RSMI patch (skipping): $root"
+        return 0
+    fi
+    # Find candidate files referencing ROCm SMI headers or rsmi_* APIs
+    mapfile -t files < <(rg -n --no-heading -l "rocm_smi/rocm_smi.h|\\brsmi_" "$root" 2>/dev/null || true)
+    if [ ${#files[@]} -eq 0 ]; then
+        echo "No ROCm SMI references found to patch"
+        return 0
+    fi
+    echo "Patching RSMI references in:"
+    for f in "${files[@]}"; do
+        echo "  $f"
+        # 1) Comment out direct include of rocm_smi header
+        sed -i 's|^[[:space:]]*#include[[:space:]]*[<\"]rocm_smi/rocm_smi.h[>\"]|#if 0\n&\n#endif|' "$f" || true
+        # 2) Force any preprocessor checks to false
+        sed -i 's/^\([[:space:]]*#if\)[[:space:]]\+defined(\?USE_ROCM_SMI\()?\)/\1 0/' "$f" || true
+        sed -i 's/^\([[:space:]]*#ifdef\)[[:space:]]\+USE_ROCM_SMI/\1 DISABLED_USE_ROCM_SMI/' "$f" || true
+        sed -i 's/^\([[:space:]]*#if\)[[:space:]]\+USE_ROCM_SMI/\1 0/' "$f" || true
+    done
+}
+
+patch_disable_rsmi_code
+
+# Speed up and avoid linking tests that can fail when optional deps are off
+export BUILD_TEST=0
+
+# Patch intra_node_comm.cpp to hard-disable any RSMI usage during build
+patch_intra_node_comm() {
+    local f="$PYTORCH_BUILD_DIR/pytorch/torch/csrc/distributed/c10d/symm_mem/intra_node_comm.cpp"
+    if [ ! -f "$f" ]; then
+        echo "intra_node_comm.cpp not found (skipping RSMI guard patch): $f"
+        return 0
+    fi
+    # 1) Force non-RSMI path in getNvlMesh by avoiding USE_RCOM branch
+    if rg -n "#if !defined\(USE_RCOM\)" "$f" >/dev/null 2>&1; then
+        sed -i 's/#if !defined(USE_RCOM)/#if 1/' "$f"
+        echo "Patched getNvlMesh guard to avoid RSMI path"
+    fi
+    # 2) Disable RSMI init in rendezvous by turning the nearby guard to #if 0 (second occurrence)
+    local tmp="${f}.tmp.$$"
+    awk '
+        BEGIN{count_if=0}
+        {
+            if ($0 ~ /^#if defined\(USE_ROCM\)/) { count_if++; }
+            if (count_if==2 && $0 ~ /^#if defined\(USE_ROCM\)/) { print "#if 0"; next }
+            print $0
+        }
+    ' "$f" > "$tmp" && mv "$tmp" "$f" && echo "Disabled RSMI init block in rendezvous"
+}
+
+patch_intra_node_comm
 
 # Stage: Build with conditional stages
 BUILD_ARGS=(
