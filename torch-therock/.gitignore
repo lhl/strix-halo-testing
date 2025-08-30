@@ -1,5 +1,6 @@
-aotriton/
+aotriton*
 pytorch/
 TheRock/
 results/
 .crush/
+composable_kernel/
