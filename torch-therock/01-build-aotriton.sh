@@ -20,6 +20,11 @@ if [ ! -d "aotriton" ]; then
     git clone https://github.com/ROCm/aotriton
 fi
 cd aotriton
+# Checkout the PyTorch-pinned commit to avoid API mismatches
+PINNED_COMMIT="1f9a37cdfbfce218fa0c07f5c0de40403019e168"
+echo "Checking out AOTriton commit ${PINNED_COMMIT} (to match PyTorch)"
+git fetch --all --tags --prune
+git checkout --detach "$PINNED_COMMIT"
 git submodule sync && git submodule update --init --recursive --force
 
 if [ -d "build" ]; then
