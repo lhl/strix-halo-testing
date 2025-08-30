@@ -307,43 +307,22 @@ patch_torchaudio_hip() {
         echo "Torchaudio LoadHIP.cmake not found (skipping patch): $hip_cmake_file"
         return 0
     fi
-    # Skip if already guarded
-    if rg -n "EXISTS \"\$\{ROCM_PATH\}/\.info/version-dev\"" "$hip_cmake_file" >/dev/null 2>&1; then
+    # Skip if already patched
+    if grep -q "EXISTS.*version-dev" "$hip_cmake_file"; then
         echo "Torchaudio LoadHIP.cmake already patched"
         return 0
     fi
-    # Insert guard around file(READ ...) and string(REGEX...) parsing
-    local tmp_file
-    tmp_file="${hip_cmake_file}.tmp.$$"
-    awk '
-      BEGIN{in_unix_block=0}
-      {
-        if ($0 ~ /if\(UNIX\)/ && prev ~ /HIP_FOUND\)/) { in_unix_block=1 }
-        if (in_unix_block && $0 ~ /file\(READ \"\$\{ROCM_PATH\}\/\.info\/version-dev\"/) {
-          print "    set(" rocm_lib "_VERSION_DEV_RAW \"\")" > "/dev/stderr"
-        }
-        print $0
-        if (in_unix_block && $0 ~ /file\(READ \"\$\{ROCM_PATH\}\/\.info\/version-dev\"/) {
-          print "    if(EXISTS \"${ROCM_PATH}/.info/version-dev\")";
-          print "      file(READ \"${ROCM_PATH}/.info/version-dev\" ${ROCM_LIB_NAME}_VERSION_DEV_RAW)";
-          print "    endif()";
-        } else if ($0 ~ /string\(REGEX MATCH \"\^\(\[0-9\]\+\)\\\.\(\[0-9\]\+\)\\\.\(\[0-9\]\+\).*\$\"/ ) {
-          print "  if(DEFINED ${ROCM_LIB_NAME}_VERSION_DEV_RAW AND NOT \"${" rocm_lib "_VERSION_DEV_RAW}\" STREQUAL \"\")";
-          print $0;
-          print "  endif()";
-          next;
-        }
-        if ($0 ~ /endif\(\)/ && in_unix_block==1) { in_unix_block=0 }
-        prev=$0
-      }
-    ' rocm_lib="${ROCM_LIB_NAME}" "$hip_cmake_file" > "$tmp_file" 2>/dev/null || {
-        # Fallback: simple text replacement for the two critical lines
-        sed -e "s|file(READ \"\${ROCM_PATH}/.info/version-dev\" \${ROCM_LIB_NAME}_VERSION_DEV_RAW)|if(EXISTS \"\${ROCM_PATH}/.info/version-dev\")\n    file(READ \"\${ROCM_PATH}/.info/version-dev\" \${ROCM_LIB_NAME}_VERSION_DEV_RAW)\n  endif()|" \
-            -e "s|string(REGEX MATCH \"^([0-9]+)\\.([0-9]+)\\.([0-9]+).*\$\" \${ROCM_LIB_NAME}_VERSION_DEV_MATCH \${\${ROCM_LIB_NAME}_VERSION_DEV_RAW})|if(DEFINED \${ROCM_LIB_NAME}_VERSION_DEV_RAW AND NOT \"\${\${ROCM_LIB_NAME}_VERSION_DEV_RAW}\" STREQUAL \"\")\n  string(REGEX MATCH \"^([0-9]+)\\.([0-9]+)\\.([0-9]+).*\$\" \${ROCM_LIB_NAME}_VERSION_DEV_MATCH \${\${ROCM_LIB_NAME}_VERSION_DEV_RAW})\nendif()|" \
-            "$hip_cmake_file" > "$tmp_file" || { echo "Failed to patch torchaudio LoadHIP.cmake" >&2; rm -f "$tmp_file"; return 1; }
-    }
-    mv "$tmp_file" "$hip_cmake_file"
-    echo "Patched: $hip_cmake_file"
+    
+    # Simple fix: wrap file read with EXISTS check and regex with empty check
+    sed -i '165s|.*file(READ.*|    if(EXISTS "${ROCM_PATH}/.info/version-dev")\n      file(READ "${ROCM_PATH}/.info/version-dev" ${ROCM_LIB_NAME}_VERSION_DEV_RAW)\n    else()\n      set(${ROCM_LIB_NAME}_VERSION_DEV_RAW "")\n    endif()|' "$hip_cmake_file"
+    
+    # Also guard the string REGEX operation
+    sed -i '/string(REGEX MATCH.*VERSION_DEV_MATCH.*VERSION_DEV_RAW)/i\
+  if(DEFINED ${ROCM_LIB_NAME}_VERSION_DEV_RAW AND NOT "${${ROCM_LIB_NAME}_VERSION_DEV_RAW}" STREQUAL "")' "$hip_cmake_file"
+    sed -i '/string(REGEX MATCH.*VERSION_DEV_MATCH.*VERSION_DEV_RAW)/a\
+  endif()' "$hip_cmake_file"
+    
+    echo "Patched: $hip_cmake_file (version-dev file and regex checks)"
 }
 
 patch_torchaudio_hip
@@ -355,39 +334,17 @@ patch_torchaudio_kineto() {
         echo "Torchaudio TorchAudioHelper.cmake not found (skipping patch): $cmake_file"
         return 0
     fi
-    # Check if already patched by looking for kineto conditional
-    if rg -n "if.*kineto_LIBRARY" "$cmake_file" >/dev/null 2>&1; then
+    
+    # Check if already patched 
+    if grep -q "Handle missing kineto" "$cmake_file"; then
         echo "Torchaudio kineto CMake already patched"
         return 0
     fi
     
-    # Create a backup and patch to make kineto optional
-    local tmp_file="${cmake_file}.tmp.$$"
+    # Insert kineto handling after the find_package(Torch REQUIRED) line
+    sed -i '/find_package(Torch REQUIRED)/a\\n# Handle missing kineto library gracefully\nif(TARGET torch::kineto OR kineto_LIBRARY)\n    message(STATUS "Kineto profiling support enabled")\n    set(USE_KINETO ON)\nelse()\n    message(WARNING "Kineto profiling library not found - profiling features disabled")\n    set(USE_KINETO OFF)\n    # Create empty kineto target to satisfy dependencies\n    add_library(kineto INTERFACE)\n    add_library(torch::kineto ALIAS kineto)\nendif()' "$cmake_file"
     
-    # Add conditional wrapper around kineto usage
-    cat > "$tmp_file" << 'EOF'
-find_package(Torch REQUIRED)
-
-# Handle missing kineto library gracefully
-if(TARGET torch::kineto OR kineto_LIBRARY)
-    message(STATUS "Kineto profiling support enabled")
-    set(USE_KINETO ON)
-else()
-    message(WARNING "Kineto profiling library not found - profiling features disabled")
-    set(USE_KINETO OFF)
-    # Create empty kineto target to satisfy dependencies
-    add_library(kineto INTERFACE)
-    add_library(torch::kineto ALIAS kineto)
-endif()
-EOF
-    
-    # Append the rest of the original file (skip the find_package line if it exists)
-    if [ -f "$cmake_file" ]; then
-        grep -v "^find_package(Torch" "$cmake_file" >> "$tmp_file" || cat "$cmake_file" >> "$tmp_file"
-    fi
-    
-    mv "$tmp_file" "$cmake_file"
-    echo "Patched: $cmake_file"
+    echo "Patched: $cmake_file (kineto handling)"
 }
 
 patch_torchaudio_kineto
