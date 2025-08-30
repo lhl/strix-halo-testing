@@ -116,8 +116,6 @@ Success with torch.float16
 
 Testing with torch.bfloat16
 Success with torch.bfloat16
-
-strix-halo-testing/torch-therock on  main [!?⇡] via 🐍 v3.12.11 via  therock on   (us-west-2) on ☁️  lhl@augmxnt.com took 8s
 ```
 
 
