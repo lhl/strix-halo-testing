@@ -150,10 +150,17 @@ pip uninstall amdsmi -y || echo "⚠ amdsmi not installed, continuing..."
 echo "Using pip install -e . --no-build-isolation (to use our torch correctly)"
 
 cd vllm
-VLLM_TARGET_DEVICE=rocm pip install -e . --no-build-isolation
+# Create constraints file to prevent pip from replacing our ROCm torch
+echo "torch==2.9.0a0+rocmsdk20250831" > /tmp/constraints.txt
+echo "pytorch-triton-rocm==3.4.0+git40b21be9.rocmsdk20250831" >> /tmp/constraints.txt
+echo "Installing vLLM with constraints to preserve ROCm torch..."
+VLLM_TARGET_DEVICE=rocm pip install -e . --no-build-isolation --constraint /tmp/constraints.txt
 cd ..
 
 # Note: python setup.py develop doesn't work, so we use pip install instead
+
+# Cleanup constraints file
+rm -f /tmp/constraints.txt
 
 # Final numpy fix
 pip install "numpy<2"
