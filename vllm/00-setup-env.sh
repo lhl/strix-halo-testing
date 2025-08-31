@@ -53,7 +53,7 @@ fi
 conda activate $ENV_NAME
 
 # Ensure python and system commands are in PATH after activation
-export PATH="$CONDA_PREFIX/bin:$PATH"
+# export PATH="$CONDA_PREFIX/bin:/usr/bin:/usr/local/bin:$PATH"
 
 # Step 3: Set up environment variables early (before PyTorch tests)
 echo ""
@@ -112,7 +112,7 @@ conda env config vars set HIP_CLANG_PATH="$ROCM_PATH/lib/llvm/bin"
 conda env config vars set HIP_DEVICE_LIB_PATH="$ROCM_PATH/lib/llvm/amdgcn/bitcode"
 
 # Set PATH and library paths using rocm-sdk detected paths
-conda env config vars set PATH="$CONDA_PREFIX/bin:$ROCM_BIN_PATH:\$PATH"
+conda env config vars set PATH="$CONDA_PREFIX/bin:$ROCM_BIN_PATH:$PATH"
 conda env config vars set LD_LIBRARY_PATH="$ROCM_PATH/lib:$ROCM_PATH/lib64:$AOTRITON_PATH/lib:\$LD_LIBRARY_PATH"
 conda env config vars set LIBRARY_PATH="$ROCM_PATH/lib:$ROCM_PATH/lib64:\$LIBRARY_PATH"
 
