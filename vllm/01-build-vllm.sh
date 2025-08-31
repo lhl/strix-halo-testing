@@ -2,10 +2,13 @@
 
 set -e  # Exit on any error
 
+# Configuration variables - fallback hierarchy: ENV_NAME -> CONDA_ENV -> "vllm"
+ENV_NAME="${ENV_NAME:-${CONDA_ENV:-vllm}}"
+
 echo "=== vLLM Build Script for gfx1151/Strix Halo ==="
 
-# Step 1: Activate vllm environment
-echo "Activating vllm environment..."
+# Step 1: Activate environment
+echo "Activating $ENV_NAME environment..."
 
 # Initialize conda/mamba in this shell session
 if [ -f "$HOME/mambaforge/etc/profile.d/conda.sh" ]; then
@@ -31,15 +34,15 @@ if [ -f "$HOME/mambaforge/etc/profile.d/mamba.sh" ]; then
     source "$HOME/mambaforge/etc/profile.d/mamba.sh"
 fi
 
-conda activate vllm
+conda activate $ENV_NAME
 
 # Verify we're in the right environment
-if [[ "$CONDA_DEFAULT_ENV" != "vllm" ]]; then
-    echo "✗ Error: Not in vllm environment!"
+if [[ "$CONDA_DEFAULT_ENV" != "$ENV_NAME" ]]; then
+    echo "✗ Error: Not in $ENV_NAME environment!"
     exit 1
 fi
 
-echo "✓ vllm environment activated"
+echo "✓ $ENV_NAME environment activated"
 
 # Step 2: We're already in the vLLM repository directory
 echo "✓ Working in vLLM repository directory"
@@ -164,7 +167,7 @@ echo ""
 echo "=== vLLM Build Complete ==="
 echo ""
 echo "To test vLLM installation:"
-echo "  conda activate vllm"
+echo "  conda activate $ENV_NAME"
 echo "  python -c \"import vllm; print('vLLM version:', vllm.__version__)\""
 echo ""
 echo "To download ShareGPT dataset and run benchmark:"

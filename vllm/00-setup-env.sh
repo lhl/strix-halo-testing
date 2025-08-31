@@ -2,8 +2,8 @@
 
 set -e  # Exit on any error
 
-# Configuration variables
-ENV_NAME="${ENV_NAME:-vllm}"
+# Configuration variables - fallback hierarchy: ENV_NAME -> CONDA_ENV -> "vllm"
+ENV_NAME="${ENV_NAME:-${CONDA_ENV:-vllm}}"
 PROJECT_NAME="${PROJECT_NAME:-vLLM}"
 ENV_SETUP_ONLY="${ENV_SETUP_ONLY:-false}"
 
