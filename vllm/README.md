@@ -1,11 +1,15 @@
 # vLLM
-Here's how to get vLLM running on Strix Halo (Ryzen 395) and some basic benchmarks/methodology for comparing.
+Here's a recipe how to build vLLM from source for running on Strix Halo (Ryzen AI Max 395, Radeon 8060S, gfx1151) and some basic benchmarks/methodology for comparing performance.
+
+This was AFAIK the first working build/recipe for vLLM on Strix Halo, but this repo should be mostly considered a jumping off point/reference for those w/ the technical wherewithal/disposition to build, rather than a drop-in way to get vLLM running.
+
+For those looking for an easier "drop-in" solution, as well as more testing and documentation, I'd highly recommend check out: [kyuz0/amd-strix-halo-vllm-toolboxes](https://github.com/kyuz0/amd-strix-halo-vllm-toolboxes) for a dockerized solution.
 
 ## Setup 
 You can refer to [torch-therock](../torch-therock) folder to install ROCm and build our fast PyTorch.
 
-Adn the vLLM build from source docs (they don't work but are a good starting point):
-- https://docs.vllm.ai/en/v0.6.5/getting_started/amd-installation.html#build-from-source-rocm
+And the vLLM build from source docs (they don't work but are a good starting point):
+- https://docs.vllm.ai/en/latest/getting_started/installation/gpu.html#build-from-source-rocm
 
 As for the actual install:
 - `00-setup-env.sh` - create mamba `vllm` env and dependencies (assumes you've have Torch and stuff built)
@@ -13,12 +17,15 @@ As for the actual install:
 
 vLLM gotchas
 - `use_existing_pytorch.py` ofc
-- amd_smi segfaults gfx1151 because ofc AMD thanks
+- amd_smi segfaults w/ gfx1151
   - need to patch vLLM to not use amdsmi
 - `pip install "numpy<2"`
 - Modify CMakeLists.txt for gfx1151
 - docs say to use setup.py - doesn't work!
   - use `pip install -e . --no-build-isolation`
+- either set constraints or reinstall torch/triton after as some intermediate steps may try to overwrite; alternatively you can --no-deps or manual installs of some packages but life is short
+ 
+Check https://strixhalo-homelab.d7.wtf/AI/vLLM for potentially more up-to-date docs in the future.
 
 ## Benchmarking
 
