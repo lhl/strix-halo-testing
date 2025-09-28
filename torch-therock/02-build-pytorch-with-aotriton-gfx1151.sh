@@ -23,9 +23,10 @@ PYTORCH_BUILD_DIR="$THEROCK_DIR/external-builds/pytorch"
 CONTINUE_FROM=""
 
 # Parse command line arguments
-# Supported: --continue <stage> | --skip-audio | --skip-vision | --python-exe <path> | --help
+# Supported: --continue <stage> | --skip-audio | --skip-vision | --python-exe <path> | --force-triton-source | --help
 SKIP_AUDIO=0
 SKIP_VISION=0
+FORCE_TRITON_SOURCE=0
 PYTHON_EXE=${PYTHON_EXE:-python}
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -45,10 +46,14 @@ while [[ $# -gt 0 ]]; do
             SKIP_VISION=1
             shift 1
             ;;
+        --force-triton-source)
+            FORCE_TRITON_SOURCE=1
+            shift 1
+            ;;
         --help|-h)
             echo "Build PyTorch with AOTriton support for gfx1151"
             echo ""
-            echo "Usage: $0 [--continue STAGE] [--skip-audio] [--skip-vision] [--python-exe PATH]"
+            echo "Usage: $0 [--continue STAGE] [--skip-audio] [--skip-vision] [--python-exe PATH] [--force-triton-source]"
             echo ""
             echo "Available stages to continue from:"
             echo "  checkout   - Skip to repository checkout (after venv setup)"
@@ -62,11 +67,13 @@ while [[ $# -gt 0 ]]; do
             echo "  --skip-audio    Skip building torchaudio"
             echo "  --skip-vision   Skip building torchvision"
             echo "  --python-exe    Python interpreter to create venv (e.g., python3.12)"
+            echo "  --force-triton-source  Force building AOTriton from source (skip prebuilt detection)"
             echo ""
             echo "Examples:"
             echo "  $0                             # Full build from start"
             echo "  $0 --continue pytorch         # Skip to PyTorch build"
             echo "  $0 --skip-audio --skip-vision # Build torch only"
+            echo "  $0 --force-triton-source      # Force AOTriton build from source"
             exit 0
             ;;
         *)
@@ -204,32 +211,39 @@ export USE_CUDA=0
 # Fix Triton version string to avoid multiple '+' characters
 export TRITON_WHEEL_VERSION_SUFFIX="+rocm$(date +%Y%m%d)"
 
-# Prefer prebuilt AOTriton from 01 (aotriton/build/install_dir)
-LOCAL_AOTRITON_PREFIX="$SCRIPT_DIR/aotriton/build/install_dir"
-if [ -z "$AOTRITON_INSTALLED_PREFIX" ] && [ -d "$LOCAL_AOTRITON_PREFIX" ] && [ -f "$LOCAL_AOTRITON_PREFIX/lib/libaotriton_v2.so" ]; then
-    echo "Found local prebuilt AOTriton (01) at: $LOCAL_AOTRITON_PREFIX"
-    export AOTRITON_INSTALLED_PREFIX="$LOCAL_AOTRITON_PREFIX"
-fi
+# Handle AOTriton installation detection
+if [ "$FORCE_TRITON_SOURCE" = "1" ]; then
+    echo "Force AOTriton source build enabled; skipping prebuilt detection"
+    export AOTRITON_INSTALL_FROM_SOURCE=1
+    unset AOTRITON_INSTALLED_PREFIX
+else
+    # Prefer prebuilt AOTriton from 01 (aotriton/build/install_dir)
+    LOCAL_AOTRITON_PREFIX="$SCRIPT_DIR/aotriton/build/install_dir"
+    if [ -z "$AOTRITON_INSTALLED_PREFIX" ] && [ -d "$LOCAL_AOTRITON_PREFIX" ] && [ -f "$LOCAL_AOTRITON_PREFIX/lib/libaotriton_v2.so" ]; then
+        echo "Found local prebuilt AOTriton (01) at: $LOCAL_AOTRITON_PREFIX"
+        export AOTRITON_INSTALLED_PREFIX="$LOCAL_AOTRITON_PREFIX"
+    fi
 
-# Fallback: try to locate via Python module to assist users who installed elsewhere
-if [ -z "$AOTRITON_INSTALLED_PREFIX" ]; then
-    AOTRITON_SITE_ROOT=$(python -c "import os,sys;\
+    # Fallback: try to locate via Python module to assist users who installed elsewhere
+    if [ -z "$AOTRITON_INSTALLED_PREFIX" ]; then
+        AOTRITON_SITE_ROOT=$(python -c "import os,sys;\
 try:\n import pyaotriton; p=os.path.dirname(pyaotriton.__file__);\
  # common layout from source install keeps lib/ one level up from module
  cands=[os.path.abspath(os.path.join(p, '..')), os.path.abspath(os.path.join(p, '..', '..'))];\
  print('\n'.join(cands))\nexcept Exception:\n pass" 2>/dev/null | head -n1)
-    if [ -n "$AOTRITON_SITE_ROOT" ] && [ -d "$AOTRITON_SITE_ROOT/lib" ] && [ -f "$AOTRITON_SITE_ROOT/lib/libaotriton_v2.so" ]; then
-        echo "Found AOTriton via Python site at: $AOTRITON_SITE_ROOT"
-        export AOTRITON_INSTALLED_PREFIX="$AOTRITON_SITE_ROOT"
+        if [ -n "$AOTRITON_SITE_ROOT" ] && [ -d "$AOTRITON_SITE_ROOT/lib" ] && [ -f "$AOTRITON_SITE_ROOT/lib/libaotriton_v2.so" ]; then
+            echo "Found AOTriton via Python site at: $AOTRITON_SITE_ROOT"
+            export AOTRITON_INSTALLED_PREFIX="$AOTRITON_SITE_ROOT"
+        fi
     fi
-fi
 
-# If still not found, build from source inside PyTorch build
-if [ -z "$AOTRITON_INSTALLED_PREFIX" ]; then
-    echo "Prebuilt AOTriton not found; will build from source (this may fail on some hosts)."
-    export AOTRITON_INSTALL_FROM_SOURCE=1
-else
-    echo "Using AOTRITON_INSTALLED_PREFIX=$AOTRITON_INSTALLED_PREFIX"
+    # If still not found, build from source inside PyTorch build
+    if [ -z "$AOTRITON_INSTALLED_PREFIX" ]; then
+        echo "Prebuilt AOTriton not found; will build from source (this may fail on some hosts)."
+        export AOTRITON_INSTALL_FROM_SOURCE=1
+    else
+        echo "Using AOTRITON_INSTALLED_PREFIX=$AOTRITON_INSTALLED_PREFIX"
+    fi
 fi
 
 # Navigate to pytorch build directory
