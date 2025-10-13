@@ -179,11 +179,22 @@ conda env config vars set CPATH="$ROCM_PATH/include:\$CPATH"
 conda env config vars set PKG_CONFIG_PATH="$ROCM_PATH/lib/pkgconfig:\$PKG_CONFIG_PATH"
 
 # Set debugging and device variables
-conda env config vars set AMD_SERIALIZE_KERNEL="3"
+conda env config vars set AMD_SERIALIZE_KERNEL="1"
 conda env config vars set HIP_VISIBLE_DEVICES="0"
 conda env config vars set HIP_ARCH="gfx1151"  # Strix Halo architecture
 
+# PyTorch + AOTriton runtime toggles
+conda env config vars set TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
+conda env config vars set PYTORCH_ROCM_ARCH="gfx1151"
+conda env config vars set TORCH_ROCM_AOTRITON_PREFER_DEFAULT=1
+
 echo "✓ Environment variables configured"
+
+# Helper: print a convenience one-liner and suggest helper script
+echo ""
+echo "You can quickly run the backend check with:" 
+echo "  TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1 PYTORCH_ROCM_ARCH=gfx1151 TORCH_ROCM_AOTRITON_PREFER_DEFAULT=1 HIP_VISIBLE_DEVICES=0 python backend-check.py"
+echo "Or use the helper script: ./run-backend-check.sh"
 
 # Step 8: Show current config
 echo ""

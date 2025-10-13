@@ -187,6 +187,10 @@ export USE_NCCL=0
 # Avoid attempting IB verbs support when using Gloo-only
 export USE_IBVERBS=0
 
+# Disable fbgemm GPU/GenAI (CUDA-only components) for ROCm builds
+export USE_FBGEMM_GPU=0
+export USE_FBGEMM_GENAI=0
+
 # Disable ROCm SMI (librocm_smi64) linkage to avoid rsmi_* unresolved symbols when
 # the SMI library is not present in the SDK/runtime path.
 export USE_ROCM_SMI=0
@@ -197,6 +201,9 @@ export CMAKE_ARGS="${CMAKE_ARGS} -DUSE_ROCM_SMI=OFF -DROCM_USE_SMI=OFF -DROCM_EN
 # Belt-and-suspenders: force the macros off in compilation too
 export CXXFLAGS="${CXXFLAGS} -DUSE_ROCM_SMI=0 -DUSE_RSMI=0 -DATEN_USE_RSMI=0"
 export CFLAGS="${CFLAGS} -DUSE_ROCM_SMI=0 -DUSE_RSMI=0 -DATEN_USE_RSMI=0"
+
+# Also explicitly disable FBGEMM GPU/GENAI in CMake cache
+export CMAKE_ARGS="${CMAKE_ARGS} -DUSE_FBGEMM_GPU=OFF -DUSE_FBGEMM_GENAI=OFF"
 
 # Disable CUDA since we're building for ROCm
 export USE_CUDA=0
@@ -342,6 +349,35 @@ patch_torchaudio_hip() {
 
 patch_torchaudio_hip
 
+# Report AOTriton pin and prebuilt alignment (advisory)
+report_aotriton_pin() {
+    local cmake_file="$PYTORCH_BUILD_DIR/pytorch/cmake/External/aotriton.cmake"
+    if [ -f "$cmake_file" ]; then
+        local cmake_pin
+        cmake_pin=$(awk -F '"' '/set\(__AOTRITON_CI_COMMIT/{print $2; exit}' "$cmake_file")
+        if [ -n "$cmake_pin" ]; then
+            echo "AOTriton pin from PyTorch: $cmake_pin"
+        fi
+        # If using local prebuilt, compare its HEAD commit
+        local local_src_dir="$SCRIPT_DIR/aotriton"
+        if [ -d "$local_src_dir/.git" ] && [ "$AOTRITON_INSTALLED_PREFIX" = "$SCRIPT_DIR/aotriton/build/install_dir" ]; then
+            local local_head
+            local_head=$(git -C "$local_src_dir" rev-parse --short=40 HEAD 2>/dev/null || true)
+            if [ -n "$local_head" ]; then
+                echo "Local prebuilt AOTriton commit: $local_head"
+                if [ -n "$cmake_pin" ] && [ "$cmake_pin" != "$local_head" ]; then
+                    echo "WARNING: Prebuilt AOTriton commit does not match PyTorch pin." >&2
+                    echo "         Consider rebuilding 01-build-aotriton.sh at $cmake_pin or set AOTRITON_INSTALL_FROM_SOURCE=1." >&2
+                fi
+            fi
+        fi
+    else
+        echo "AOTriton CMake file not found for pin report: $cmake_file"
+    fi
+}
+
+report_aotriton_pin
+
 # Patch torchaudio CMake to handle missing kineto library gracefully
 patch_torchaudio_kineto() {
     local cmake_file="$PYTORCH_BUILD_DIR/pytorch_audio/cmake/TorchAudioHelper.cmake"
@@ -426,6 +462,53 @@ patch_disable_rsmi_code() {
 }
 
 patch_disable_rsmi_code
+
+# Guard FBGEMM GenAI includes behind __has_include for ROCm builds
+patch_fbgemm_genai_guards() {
+    local hip_file="$PYTORCH_BUILD_DIR/pytorch/aten/src/ATen/native/hip/Blas.cpp"
+    local cuda_file="$PYTORCH_BUILD_DIR/pytorch/aten/src/ATen/native/cuda/Blas.cpp"
+
+    for f in "$hip_file" "$cuda_file"; do
+        if [ ! -f "$f" ]; then
+            echo "FBGEMM guard patch: file not found (skipping): $f"
+            continue
+        fi
+        if rg -n "__has_include\(<fbgemm_gpu/torch_ops.h>\)" "$f" >/dev/null 2>&1; then
+            echo "FBGEMM guard patch: already patched: $f"
+            continue
+        fi
+        # Replace all occurrences of "#ifdef USE_FBGEMM_GENAI" with a safer check
+        sed -E -i 's/^([[:space:]]*)#ifdef USE_FBGEMM_GENAI/\1#if defined(USE_FBGEMM_GENAI) \&\& __has_include(<fbgemm_gpu\/torch_ops.h>)/' "$f" || {
+            echo "Failed to patch FBGEMM guard in: $f" >&2
+            continue
+        }
+        echo "Patched FBGEMM GenAI guard: $f"
+    done
+}
+
+patch_fbgemm_genai_guards
+
+# Force-disable FBGEMM_GENAI in build_prod_wheels.py for Linux (<2.10 path)
+patch_build_prod_wheels_disable_fbgemm() {
+    local bpw_file="$THEROCK_DIR/external-builds/pytorch/build_prod_wheels.py"
+    if [ ! -f "$bpw_file" ]; then
+        echo "build_prod_wheels.py not found (skipping FBGEMM disable patch): $bpw_file"
+        return 0
+    fi
+    # If this line already uses OFF, skip. Otherwise, switch ON->OFF in the <2.10 branch
+    if rg -n "FBGEMM_GENAI pre-set \(honored\)" "$bpw_file" >/dev/null 2>&1; then
+        echo "FBGEMM disable patch: already modernized (honors env)"
+        return 0
+    fi
+    if rg -n "env\[\"USE_FBGEMM_GENAI\"\] = \"OFF\"" "$bpw_file" >/dev/null 2>&1; then
+        echo "FBGEMM disable patch: already OFF by default"
+        return 0
+    fi
+    sed -i '0,/env\["USE_FBGEMM_GENAI"\] = "ON"/s//env["USE_FBGEMM_GENAI"] = "OFF"/' "$bpw_file" && \
+        echo "Patched build_prod_wheels to default USE_FBGEMM_GENAI=OFF for <2.10"
+}
+
+patch_build_prod_wheels_disable_fbgemm
 
 # Speed up and avoid linking tests that can fail when optional deps are off
 export BUILD_TEST=0
@@ -514,7 +597,24 @@ python build_prod_wheels.py build "${BUILD_ARGS[@]}"
 show_stage "Build Complete"
 echo "Built wheels are in: $HOME/tmp/pyout"
 echo ""
-echo "To install:"
-echo "  pip install $HOME/tmp/pyout/torch-*.whl --force-reinstall --no-deps"
-echo "  pip install $HOME/tmp/pyout/torchaudio-*.whl --force-reinstall --no-deps"  
-echo "  pip install $HOME/tmp/pyout/torchvision-*.whl --force-reinstall --no-deps"
+echo "To install (exact wheels for this run):"
+PYTAG=$(python -c 'import sys; print(f"cp{sys.version_info[0]}{sys.version_info[1]}")')
+RUNSTAMP=$(date +%Y%m%d)
+OUTDIR="$HOME/tmp/pyout"
+
+# Prefer wheels built today for the active Python tag
+TORCH_WHL=$(ls -1t "$OUTDIR"/torch-*+rocmsdk${RUNSTAMP}-${PYTAG}-${PYTAG}-*.whl 2>/dev/null | head -n1)
+AUDIO_WHL=$(ls -1t "$OUTDIR"/torchaudio-*+rocmsdk${RUNSTAMP}-${PYTAG}-${PYTAG}-*.whl 2>/dev/null | head -n1)
+VISION_WHL=$(ls -1t "$OUTDIR"/torchvision-*+rocmsdk${RUNSTAMP}-${PYTAG}-${PYTAG}-*.whl 2>/dev/null | head -n1)
+
+if [ -n "$TORCH_WHL" ]; then
+  echo "  pip install \"$TORCH_WHL\" --force-reinstall --no-deps"
+else
+  echo "  (torch) No exact-match wheel found for ${PYTAG} + rocmsdk${RUNSTAMP}. Check $OUTDIR."
+fi
+if [ -n "$AUDIO_WHL" ]; then
+  echo "  pip install \"$AUDIO_WHL\" --force-reinstall --no-deps"
+fi
+if [ -n "$VISION_WHL" ]; then
+  echo "  pip install \"$VISION_WHL\" --force-reinstall --no-deps"
+fi
