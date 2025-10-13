@@ -59,24 +59,25 @@ def test_attention_sizes(sizes_to_test):
             
             for impl_name, impl_func in implementations:
                 try:
-                    # Forward pass
-                    fwd_time = do_bench(impl_func)
-                    fwd_out = impl_func()
-                    
-                    # Backward pass
-                    bwd_time = do_bench(lambda: fwd_out.backward(gradOut, retain_graph=True))
-                    
-                    results.append([
-                        impl_name,
-                        f"{fwd_time:.4f}",
-                        f"{calculate_tflops(flops, fwd_time, 4):.2f}",
-                        f"{bwd_time:.4f}",
-                        f"{calculate_tflops(flops, bwd_time, 10):.2f}",
-                    ])
-                    
-                    del fwd_out
-                    torch.cuda.empty_cache()
-                    
+                    with torch.nn.attention.sdpa_kernel(torch.nn.attention.SDPBackend.FLASH_ATTENTION):
+                        # Forward pass
+                        fwd_time = do_bench(impl_func)
+                        fwd_out = impl_func()
+                        
+                        # Backward pass
+                        bwd_time = do_bench(lambda: fwd_out.backward(gradOut, retain_graph=True))
+                        
+                        results.append([
+                            impl_name,
+                            f"{fwd_time:.4f}",
+                            f"{calculate_tflops(flops, fwd_time, 4):.2f}",
+                            f"{bwd_time:.4f}",
+                            f"{calculate_tflops(flops, bwd_time, 10):.2f}",
+                        ])
+                        
+                        del fwd_out
+                        torch.cuda.empty_cache()
+                        
                 except Exception as e:
                     print(f"Error with {impl_name}: {e}")
                     results.append([impl_name, "ERROR", "-", "ERROR", "-"])
