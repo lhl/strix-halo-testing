@@ -1,5 +1,4 @@
 # test_attention_benchmark_small.py
-from functools import lru_cache
 import torch
 import torch.nn.functional as F
 from triton.testing import do_bench
@@ -9,13 +8,13 @@ import os
 # Set environment variables for AOTriton
 os.environ['TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL'] = '1'
 
+# Table formatting: override with env var TABLE_FORMAT (e.g., 'simple', 'plain', 'github', 'tsv')
+TABLE_FORMAT = os.environ.get('TABLE_FORMAT', 'simple')
+
 torch.set_default_device("cuda")
 torch.manual_seed(0)
 
 data_type = torch.float16
-
-def calculate_tflops(flops: float, time_ms: float, multiplier: int) -> float:
-    return multiplier * flops * (1e3 / time_ms) / 1e12
 
 def print_header(text):
     width = 91
@@ -23,81 +22,131 @@ def print_header(text):
     print(f"║ {text.center(width - 4)} ║")
     print("╚" + "═" * (width - 2) + "╝")
 
+def available_sdpa_backends():
+    backends = []
+    SDP = torch.nn.attention.SDPBackend
+    # Prefer common names, fall back where necessary
+    if hasattr(SDP, "FLASH_ATTENTION"):
+        backends.append(("FlashAttention (FA2)", SDP.FLASH_ATTENTION))
+    if hasattr(SDP, "EFFICIENT_ATTENTION"):
+        backends.append(("EfficientAttention", SDP.EFFICIENT_ATTENTION))
+    elif hasattr(SDP, "MEM_EFFICIENT_ATTENTION"):
+        backends.append(("EfficientAttention", SDP.MEM_EFFICIENT_ATTENTION))
+    if hasattr(SDP, "MATH"):
+        backends.append(("Math", SDP.MATH))
+    return backends
+
+def bench_fwd(impl):
+    return do_bench(impl)
+
+def bench_fwd_bwd(impl, qkv, grad_out):
+    # Each iteration recreates a fresh graph and avoids grad accumulation
+    def _step():
+        q, k, v = [t.detach().requires_grad_() for t in qkv]
+        out = impl(q, k, v)
+        out.backward(grad_out)
+    return do_bench(_step)
+
+def sdpa_effective_pairs(S: int, causal: bool) -> int:
+    # Number of pairwise score computations per row accounting for causal mask
+    if causal:
+        return S * (S + 1) // 2
+    return S * S
+
+def sdpa_flops(B: int, H: int, S: int, D: int, causal: bool, count_fma_as_2: bool = True):
+    # Approximate FLOPs dominated by GEMM-like ops; ignores softmax/exponentials
+    # Forward: QK^T and P@V => ~4 * B * H * D * S_eff
+    # Backward (matmul terms): dV, dP, dQ, dK => ~8 * B * H * D * S_eff
+    s_eff = sdpa_effective_pairs(S, causal)
+    unit = 2 if count_fma_as_2 else 1
+    fwd = unit * 4 * B * H * D * s_eff
+    bwd = unit * 8 * B * H * D * s_eff
+    return fwd, bwd, fwd + bwd
+
+def to_tflops(flops: float, time_ms: float) -> float:
+    if isinstance(time_ms, str):
+        return float('nan')
+    secs = time_ms * 1e-3
+    if secs <= 0:
+        return float('inf')
+    return flops / secs / 1e12
+
 def test_attention_sizes(sizes_to_test):
-    """Test different attention implementations with various sizes."""
-    
+    """Test SDPA backends with causal/non-causal across sizes."""
     results_all = []
-    
+
+    # Determine available backends once
+    backends = available_sdpa_backends()
+    if not backends:
+        print("No SDPA backends detected; exiting.")
+        return []
+
     for name, (B, H, S, D) in sizes_to_test.items():
         print_header(f"Testing {name}: B={B}, H={H}, S={S}, D={D}")
-        
-        # Check memory requirement
-        memory_per_tensor = B * H * S * D * 2  # float16 = 2 bytes
+
+        # Dtype-aware memory requirement
+        bytes_per_el = torch.tensor((), dtype=data_type).element_size()
+        memory_per_tensor = B * H * S * D * bytes_per_el
         total_memory = memory_per_tensor * 3  # Q, K, V
         print(f"Estimated memory per QKV tensor: {memory_per_tensor / (1024**3):.2f} GB")
         print(f"Total QKV memory: {total_memory / (1024**3):.2f} GB")
-        
+
         try:
-            qkv = [
+            # Base tensors reused across iterations; we detach inside the timed step
+            qkv_base = [
                 torch.randn(B, H, S, D, device="cuda", dtype=data_type, requires_grad=True)
                 for _ in range(3)
             ]
-            gradOut = torch.randn(B, H, S, D, device="cuda", dtype=data_type)
-            
-            # Different attention implementations
-            causal_fa2 = lambda: F.scaled_dot_product_attention(*qkv, is_causal=True)
-            regular_sdpa = lambda: F.scaled_dot_product_attention(*qkv)
-            
-            # Benchmark
+            grad_out = torch.randn(B, H, S, D, device="cuda", dtype=data_type)
+
             results = []
-            flops = 0.5 * B * H * D * S * S  # Causal attention FLOPS
-            
-            implementations = [
-                ("Causal FA2", causal_fa2),
-                ("Regular SDPA", regular_sdpa),
-            ]
-            
-            for impl_name, impl_func in implementations:
-                try:
-                    with torch.nn.attention.sdpa_kernel(torch.nn.attention.SDPBackend.FLASH_ATTENTION):
-                        # Forward pass
-                        fwd_time = do_bench(impl_func)
-                        fwd_out = impl_func()
-                        
-                        # Backward pass
-                        bwd_time = do_bench(lambda: fwd_out.backward(gradOut, retain_graph=True))
-                        
-                        results.append([
-                            impl_name,
-                            f"{fwd_time:.4f}",
-                            f"{calculate_tflops(flops, fwd_time, 4):.2f}",
-                            f"{bwd_time:.4f}",
-                            f"{calculate_tflops(flops, bwd_time, 10):.2f}",
-                        ])
-                        
-                        del fwd_out
-                        torch.cuda.empty_cache()
-                        
-                except Exception as e:
-                    print(f"Error with {impl_name}: {e}")
-                    results.append([impl_name, "ERROR", "-", "ERROR", "-"])
-            
+
+            for backend_name, backend in backends:
+                for is_causal in (True, False):
+                    label = f"{backend_name} ({'causal' if is_causal else 'non-causal'})"
+                    try:
+                        with torch.nn.attention.sdpa_kernel(backend):
+                            # Define impl using positional q,k,v to ease the fwd_bwd helper
+                            def impl(q, k, v, _is_causal=is_causal):
+                                return F.scaled_dot_product_attention(q, k, v, is_causal=_is_causal)
+
+                            # Forward pass timing (fixed graph OK)
+                            fwd_time = bench_fwd(lambda: impl(*qkv_base))
+                            # Backward timing with fresh graph per iter
+                            step_time = bench_fwd_bwd(impl, qkv_base, grad_out)
+
+                            fwd_flops, bwd_flops, step_flops = sdpa_flops(B, H, S, D, is_causal)
+                            fwd_tflops = to_tflops(fwd_flops, fwd_time)
+                            step_tflops = to_tflops(step_flops, step_time)
+
+                            results.append([
+                                label,
+                                fwd_time,
+                                fwd_tflops,
+                                step_time,
+                                step_tflops,
+                            ])
+                            torch.cuda.empty_cache()
+                    except Exception as e:
+                        print(f"Error with {label}: {e}")
+                        results.append([label, "ERROR", "-", "ERROR", "-"])
+
+            floatfmt_spec = (None, ".3f", ".2f", ".3f", ".2f")
             print(tabulate(
                 results,
-                headers=["Operation", "FW Time (ms)", "FW FLOPS (TF/s)", "BW Time (ms)", "BW FLOPS (TF/s)"],
-                tablefmt="grid",
+                headers=["Operation", "FW Time (ms)", "FW TFLOPS", "Step Time (ms)", "Step TFLOPS"],
+                tablefmt=TABLE_FORMAT,
+                floatfmt=floatfmt_spec,
             ))
-            
+
             results_all.append((name, results))
-            
+
         except Exception as e:
             print(f"Failed to test {name}: {e}")
-        
         finally:
             torch.cuda.empty_cache()
-        
         print()
-    
+
     return results_all
 
 def check_aotriton_status():
@@ -144,8 +193,11 @@ if __name__ == "__main__":
     print_header("Summary")
     for name, result_list in results:
         print(f"{name}:")
-        for result in result_list:
-            print(f"  {result[0]}: {result[1]} ms")
+        for label, fw_ms, fw_tflops, step_ms, step_tflops in result_list:
+            if isinstance(fw_ms, (int, float)):
+                print(f"  {label}: FW {fw_ms:.3f} ms ({fw_tflops:.2f} TF/s), Step {step_ms:.3f} ms ({step_tflops:.2f} TF/s)")
+            else:
+                print(f"  {label}: FW {fw_ms} ms ({fw_tflops} TF/s), Step {step_ms} ms ({step_tflops} TF/s)")
     
     # Test with different dtypes
     print_header("Testing with different dtypes")
