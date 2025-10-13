@@ -3,6 +3,7 @@
 import os
 import sys
 import glob
+import warnings
 
 
 def _sanitize_env() -> None:
@@ -108,13 +109,32 @@ def main() -> int:
 
     # Try executing with each backend explicitly
     print("\n=== Forced Execution Per Backend ===")
+    def _shorten_err(ex: Exception) -> str:
+        s = str(ex)
+        # Take the first non-empty line
+        for line in s.splitlines():
+            line = line.strip()
+            if line:
+                s = line
+                break
+        # Normalize common HIP error noise
+        if "HIP error:" in s:
+            if "invalid argument" in s:
+                return "HIP error: invalid argument"
+            return s
+        if "No available kernel" in s:
+            return "No available kernel"
+        return s[:160]
+
     def try_backend(backend):
         try:
-            with sdpa_kernel(backend):
-                _ = F.scaled_dot_product_attention(q, k, v, is_causal=True)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", UserWarning)
+                with sdpa_kernel(backend):
+                    _ = F.scaled_dot_product_attention(q, k, v, is_causal=True)
             return "OK"
         except Exception as ex:
-            return f"ERR: {ex}"
+            return f"ERR: {_shorten_err(ex)}"
 
     checks = [
         ("FLASH_ATTENTION", SDPBackend.FLASH_ATTENTION),
@@ -126,7 +146,7 @@ def main() -> int:
         msg = try_backend(be)
         print(f"{name}: {msg}")
         if name == "EFFICIENT_ATTENTION" and msg.startswith("ERR"):
-            print("Note: Efficient attention can be unstable on current ROCm nightlies. Prefer FLASH_ATTENTION.")
+            print("Note: Efficient attention can be unstable on ROCm nightlies. Prefer FLASH_ATTENTION.")
 
     print("\nDone.")
     return 0
