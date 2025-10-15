@@ -179,7 +179,8 @@ conda env config vars set CPATH="$ROCM_PATH/include:\$CPATH"
 conda env config vars set PKG_CONFIG_PATH="$ROCM_PATH/lib/pkgconfig:\$PKG_CONFIG_PATH"
 
 # Set debugging and device variables
-conda env config vars set AMD_SERIALIZE_KERNEL="1"
+# conda env config vars set AMD_SERIALIZE_KERNEL="1" # for debug
+conda env config vars set AMD_SERIALIZE_KERNEL="0" # for benchmarking/use
 conda env config vars set HIP_VISIBLE_DEVICES="0"
 conda env config vars set HIP_ARCH="gfx1151"  # Strix Halo architecture
 
