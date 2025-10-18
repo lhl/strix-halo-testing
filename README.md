@@ -32,42 +32,47 @@ That being said, while the Spark has a much more mature software ecosystem and a
 
 ggeranov ran a fair amount of [llama.cpp performance sweeps](https://github.com/ggml-org/llama.cpp/discussions/16578) on launch (perf actually has since improved/been updated). I was curious and ran some comparisons vs my Strix Halo (Framework Desktop, Arch 6.17.0-1-mainline, all optimizations (amd_iommu, tuned) set properly).  I only tested against his gpt-oss-120b tests (this is the ggml-org one, so Q8/MXFP4).
 
-This was tested with TheRock/ROCm nightly (7.10.0a20251014) and the latest Vulkan drivers (RADV 25.2.4-2, AMDVLK 2025.Q2.1-1) and I've picked the faster overall numbers for Vulkan (AMDVLK atm) and ROCm (regular hipblas w/ rocWMMA). llama.cpp build is 6763, almost the same as ggeranov's build (6767).
+This was tested with TheRock/ROCm nightly (7.10.0a20251017) and the latest Vulkan drivers (RADV 25.2.4-2, AMDVLK 2025.Q2.1-1) and I've picked the faster overall numbers for Vulkan (AMDVLK atm) and ROCm (regular hipblas w/ rocWMMA). llama.cpp build is 6792, almost the same as ggeranov's build (6767).
 
-Token generation/decode performance is essentially even at short context with Vulkan (Spark +0.2% at 2K context), while Spark pulls ahead with ROCm (+11.7% at 2K context, +108.5% at 32K context). The CUDA backend drops less as context increases vs either Vulkan or ROCm (Vulkan does better than ROCm as context increases - at 32K context, Vulkan `tg` is 2X ROCm!). For prompt processing/prefill, Strix Halo gets crushed on `pp` tests. In the best case (ROCm), Strix Halo starts off over 2X slower and by 32K gets to 5X slower, dropping off over twice as fast in performance as context extends.
+Token generation/decode performance is essentially even at short context with Vulkan (Spark +5.6% at 2K context), while Spark pulls ahead with ROCm (+13.6% at 2K context, +117.5% at 32K context). The CUDA backend drops less as context increases vs either Vulkan or ROCm (Vulkan does better than ROCm as context increases - at 32K context, Vulkan `tg` is 1.8X ROCm!). For prompt processing/prefill, ROCm performance has improved significantly but Strix Halo still lags behind Spark. With ROCm, Strix Halo starts off +67.8% slower at 2K context and by 32K gets to +445.6% slower, while Vulkan ranges from +131.7% to +790.9% slower.
 
-## Vulkan AMDVLK
+**Note on Vulkan drivers and batch sizes:**
+- AMDVLK (shown below) uses optimal `-ub 512` and has better `pp` performance
+- RADV uses optimal `-ub 1024` with lower `pp` but `tg` decreases less at depth
+- ROCm tested with standard `-ub 2048`
 
-| Test          |     DGX |   STXH |       % |
-| ------------- | ------: | -----: | ------: |
-| pp2048        | 1689.47 | 729.59 | +131.6% |
-| pp2048@d4096  | 1733.41 | 563.30 | +207.7% |
-| pp2048@d8192  | 1705.93 | 424.52 | +301.8% |
-| pp2048@d16384 | 1514.78 | 260.18 | +482.2% |
-| pp2048@d32768 | 1221.23 | 152.56 | +700.5% |
-
-| Test        |   DGX |  STXH |      % |
-| ----------- | ----: | ----: | -----: |
-| tg32        | 52.87 | 52.74 |  +0.2% |
-| tg32@d4096  | 51.02 | 49.49 |  +3.1% |
-| tg32@d8192  | 48.46 | 46.94 |  +3.2% |
-| tg32@d16384 | 44.78 | 42.85 |  +4.5% |
-| tg32@d32768 | 38.76 | 36.31 |  +6.7% |
-
-## ROCm w/ rocWMMA
+### Vulkan AMDVLK
 
 | Test          |     DGX |   STXH |       % |
 | ------------- | ------: | -----: | ------: |
-| pp2048        | 1689.47 | 735.77 | +129.6% |
-| pp2048@d4096  | 1733.41 | 621.88 | +178.7% |
-| pp2048@d8192  | 1705.93 | 535.84 | +218.4% |
-| pp2048@d16384 | 1514.78 | 384.69 | +293.8% |
-| pp2048@d32768 | 1221.23 | 242.19 | +404.2% |
+| pp2048        | 1689.47 | 729.10 | +131.7% |
+| pp2048@d4096  | 1733.41 | 562.15 | +208.4% |
+| pp2048@d8192  | 1705.93 | 424.50 | +301.9% |
+| pp2048@d16384 | 1514.78 | 249.68 | +506.7% |
+| pp2048@d32768 | 1221.23 | 137.08 | +790.9% |
 
 | Test        |   DGX |  STXH |      % |
 | ----------- | ----: | ----: | -----: |
-| tg32        | 52.87 | 47.35 | +11.7% |
-| tg32@d4096  | 51.02 | 40.77 | +25.1% |
-| tg32@d8192  | 48.46 | 34.50 | +40.5% |
-| tg32@d16384 | 44.78 | 26.86 | +66.7% |
-| tg32@d32768 | 38.76 | 18.59 | +108.5% |
+| tg32        | 52.87 | 50.05 |  +5.6% |
+| tg32@d4096  | 51.02 | 46.11 | +10.6% |
+| tg32@d8192  | 48.46 | 43.15 | +12.3% |
+| tg32@d16384 | 44.78 | 38.46 | +16.4% |
+| tg32@d32768 | 38.76 | 31.54 | +22.9% |
+
+### ROCm w/ rocWMMA
+
+| Test          |     DGX |   STXH |       % |
+| ------------- | ------: | -----: | ------: |
+| pp2048        | 1689.47 | 1006.65 |  +67.8% |
+| pp2048@d4096  | 1733.41 | 790.45 | +119.3% |
+| pp2048@d8192  | 1705.93 | 603.83 | +182.5% |
+| pp2048@d16384 | 1514.78 | 405.53 | +273.5% |
+| pp2048@d32768 | 1221.23 | 223.82 | +445.6% |
+
+| Test        |   DGX |  STXH |      % |
+| ----------- | ----: | ----: | -----: |
+| tg32        | 52.87 | 46.56 | +13.6% |
+| tg32@d4096  | 51.02 | 38.25 | +33.4% |
+| tg32@d8192  | 48.46 | 32.65 | +48.4% |
+| tg32@d16384 | 44.78 | 25.50 | +75.6% |
+| tg32@d32768 | 38.76 | 17.82 | +117.5% |
