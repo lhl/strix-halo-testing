@@ -21,30 +21,35 @@ fi
 # Step 2: Initialize and activate environment
 echo "Activating therock environment..."
 
+# Detect conda executable path
+CONDA_EXE="${CONDA_EXE:-$(which conda 2>/dev/null)}"
+if [ -z "$CONDA_EXE" ]; then
+    echo "✗ Error: Could not find conda executable!"
+    echo "Please ensure conda/mamba is installed and accessible."
+    exit 1
+fi
+
+# Get conda base from CONDA_EXE
+CONDA_BASE=$(dirname $(dirname "$CONDA_EXE"))
+echo "Detected conda installation: $CONDA_BASE"
+
 # Initialize conda/mamba in this shell session
-if [ -f "$HOME/mambaforge/etc/profile.d/conda.sh" ]; then
-    source "$HOME/mambaforge/etc/profile.d/conda.sh"
-elif [ -f "$HOME/miniconda3/etc/profile.d/conda.sh" ]; then
-    source "$HOME/miniconda3/etc/profile.d/conda.sh"
-elif [ -f "$HOME/anaconda3/etc/profile.d/conda.sh" ]; then
-    source "$HOME/anaconda3/etc/profile.d/conda.sh"
+# We need to source conda.sh to get the conda shell functions
+if [ -f "$CONDA_BASE/etc/profile.d/conda.sh" ]; then
+    source "$CONDA_BASE/etc/profile.d/conda.sh"
 else
-    # Try to find conda installation
-    CONDA_BASE=$(find /opt /usr/local $HOME -name "etc/profile.d/conda.sh" 2>/dev/null | head -1 | xargs dirname | xargs dirname | xargs dirname 2>/dev/null)
-    if [ -n "$CONDA_BASE" ]; then
-        source "$CONDA_BASE/etc/profile.d/conda.sh"
-    else
-        echo "✗ Error: Could not find conda installation!"
-        echo "Please ensure conda/mamba is installed and accessible."
-        exit 1
-    fi
+    echo "✗ Error: Could not find conda.sh at $CONDA_BASE/etc/profile.d/conda.sh"
+    exit 1
 fi
 
 # Initialize mamba if available
-if [ -f "$HOME/mambaforge/etc/profile.d/mamba.sh" ]; then
-    source "$HOME/mambaforge/etc/profile.d/mamba.sh"
+if [ -f "$CONDA_BASE/etc/profile.d/mamba.sh" ]; then
+    # Set MAMBA_ROOT_PREFIX to avoid warnings
+    export MAMBA_ROOT_PREFIX="$CONDA_BASE"
+    source "$CONDA_BASE/etc/profile.d/mamba.sh"
 fi
 
+# Now we can safely activate
 conda activate therock
 
 # Ensure python and system commands are in PATH after activation
@@ -251,27 +256,18 @@ echo "Running ROCm tests:"
 rocm-sdk test
 
 echo ""
-echo "=== Testing with Environment Variables ==="
-echo "Reactivating environment to load new variables..."
-conda deactivate
-conda activate therock
-
+echo "=== Note About Environment Variables ==="
+echo "Environment variables have been configured for the 'therock' conda environment."
+echo "They will be automatically loaded when you activate the environment in a new shell:"
+echo "  conda deactivate"
+echo "  conda activate therock"
 echo ""
-echo "Environment variables now active. Testing PyTorch with ROCm:"
-python -c "
-import torch
-print(f'PyTorch version: {torch.__version__}')
-print(f'PyTorch ROCm version: {torch.version.hip}')
-print(f'CUDA available: {torch.cuda.is_available()}')
-print(f'Device count: {torch.cuda.device_count()}')
-if torch.cuda.is_available():
-    print(f'Device name: {torch.cuda.get_device_name()}')
-    print(f'Device capability: {torch.cuda.get_device_capability()}')
-    print('✓ ROCm/CUDA working with environment variables!')
-else:
-    print('⚠ CUDA still not available - check environment configuration')
-"
-
+echo "In this script session, the environment variables are NOT yet active because"
+echo "conda env vars are only loaded when activating in an interactive shell."
+echo ""
+echo "You can verify the setup works by running in a new shell:"
+echo "  conda activate therock"
+echo "  python -c \"import torch; print('CUDA available:', torch.cuda.is_available())\""
 echo ""
 echo "Environment setup complete!"
-echo "The therock environment is now active with all ROCm variables configured."
+echo "The therock environment variables have been configured."
