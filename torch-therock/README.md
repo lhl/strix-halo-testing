@@ -1,7 +1,7 @@
 # PyTorch w/ FA for gfx1151
 
 After a few not-so-successful approaches, this one works:
-- Use ROCm/TheROCK ROCm nightly - you can use `00-setup-env.sh` to create a "therock" mamba/conda env w/ that
+- Use ROCm/TheROCK ROCm nightly - you can use `00-setup-env.sh` to create a "therock" mamba/conda env if you use conda for setup. If you are managing your own env just skip to the 01 script. 
 - Build the pinned aotriton that TheRock PyTorch build script uses to build aotriton w/ `01-build-aotriton.sh`
 - Build PyTorch leveraging our own aotriton and some extra patches we apply to the TheRock PyTorch build: `02-build-pytorch-with-aotriton-gfx1151.sh`
 - Manually install the `.whl` files
