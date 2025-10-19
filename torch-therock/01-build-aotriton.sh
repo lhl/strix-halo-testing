@@ -106,4 +106,8 @@ if [ -d "$INSTALL_DIR/lib/aotriton.images" ]; then
     cp -r "$INSTALL_DIR/lib/aotriton.images/"* "$TORCH_LIB_DIR/aotriton.images/" 2>/dev/null || true
 fi
 
-echo "You should be able to run `python 10-test_aotriton_direct.py` to test. If you get errors, give `install-aotriton.sh` a try for helping to install." 
+# Return to the original root directory
+cd ../..
+
+echo "AOTriton build and installation complete!"
+echo "You can now run: python 10-test_aotriton_direct.py"
