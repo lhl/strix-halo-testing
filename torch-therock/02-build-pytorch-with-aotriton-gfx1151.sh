@@ -7,15 +7,14 @@
 #   ./02-build-pytorch-with-aotriton-gfx1151.sh [--continue STAGE] [--help]
 #
 # Stages:
-#   checkout   - Skip to repository checkout (after venv setup)
+#   checkout   - Skip to repository checkout (after environment check)
 #   rocm       - Skip to ROCm installation 
 #   triton     - Skip to triton build
 #   pytorch    - Skip to PyTorch build
 #   audio      - Skip to torchaudio build
 #   vision     - Skip to torchvision build
 
-set -e
-set -o pipefail
+set -euo pipefail
 
 SCRIPT_DIR="$(cd $(dirname $0) && pwd)"
 THEROCK_DIR="$SCRIPT_DIR/TheRock"
@@ -51,7 +50,7 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: $0 [--continue STAGE] [--skip-audio] [--skip-vision] [--python-exe PATH]"
             echo ""
             echo "Available stages to continue from:"
-            echo "  checkout   - Skip to repository checkout (after venv setup)"
+            echo "  checkout   - Skip to repository checkout (after environment check)"
             echo "  rocm       - Skip to ROCm installation"
             echo "  triton     - Skip to triton build"
             echo "  pytorch    - Skip to PyTorch build"  
@@ -61,7 +60,7 @@ while [[ $# -gt 0 ]]; do
             echo "Optional flags:"
             echo "  --skip-audio    Skip building torchaudio"
             echo "  --skip-vision   Skip building torchvision"
-            echo "  --python-exe    Python interpreter to create venv (e.g., python3.12)"
+            echo "  --python-exe    Python interpreter to run build steps (default: python)"
             echo ""
             echo "Examples:"
             echo "  $0                             # Full build from start"
@@ -76,6 +75,12 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+if ! command -v "$PYTHON_EXE" >/dev/null 2>&1; then
+    echo "Error: Python executable '$PYTHON_EXE' not found in PATH."
+    echo "Set PYTHON_EXE to the interpreter from your prepared environment."
+    exit 1
+fi
 
 # Function to check if we should skip to a specific stage
 should_skip_to() {
@@ -113,7 +118,7 @@ check_build_state() {
     fi
     
     # Check if ROCm is installed by looking for recent pip installs
-    if pip show rocm-sdk >/dev/null 2>&1; then
+    if "$PYTHON_EXE" -m pip show rocm-sdk >/dev/null 2>&1; then
         suggestions+=("rocm (ROCm SDK appears to be installed)")
     fi
     
@@ -144,32 +149,30 @@ fi
 echo "=== Building PyTorch with AOTriton for gfx1151 ==="
 [ -n "$CONTINUE_FROM" ] && echo "Continuing from stage: $CONTINUE_FROM"
 
-# Stage: Virtual Environment Setup
+# Stage: Environment check
 if ! should_skip_to "venv"; then
-    show_stage "Virtual Environment Setup"
-    if [ -n "${VIRTUAL_ENV}" ] || [ -n "${CONDA_PREFIX}" ]; then
-        if [ -n "${VIRTUAL_ENV}" ]; then
-            echo "Using existing virtual environment: ${VIRTUAL_ENV}"
-        else
-            echo "Using existing conda environment: ${CONDA_PREFIX}"
-        fi
-    else
-        if [ -f $THEROCK_DIR/.venv/bin/activate ]; then
-            source $THEROCK_DIR/.venv/bin/activate
-            echo "Activated virtual environment: ${VIRTUAL_ENV}"
-        else
-            echo "Creating new virtual environment..."
-            cd $THEROCK_DIR
-            "$PYTHON_EXE" -m venv .venv && source .venv/bin/activate
-            echo "Created and activated virtual environment: ${VIRTUAL_ENV}"
-        fi
+    show_stage "Environment Check"
+    PYTHON_BIN=$(command -v "$PYTHON_EXE")
+    echo "Using python interpreter: $PYTHON_BIN"
+    "$PYTHON_EXE" --version
+    if ! "$PYTHON_EXE" -c "import torch" >/dev/null 2>&1; then
+        cat <<'EOF'
+Error: Could not import torch with the selected Python interpreter.
+Ensure you're running this script inside an environment with ROCm-enabled PyTorch dependencies.
+You can run ./00-setup-env.sh to provision a conda environment, or supply your own.
+EOF
+        exit 1
     fi
+    TORCH_DETAILS=$("$PYTHON_EXE" - <<'PY'
+import torch, os
+loc = os.path.dirname(torch.__file__)
+hip = getattr(torch.version, 'hip', 'unknown')
+print(f"version={torch.__version__} hip={hip} location={loc}")
+PY
+)
+    echo "Torch details: $TORCH_DETAILS"
 else
-    echo "SKIPPED: Virtual environment setup"
-    # Still need to activate if available
-    if [ -f $THEROCK_DIR/.venv/bin/activate ]; then
-        source $THEROCK_DIR/.venv/bin/activate
-    fi
+    echo "SKIPPED: Environment check (assuming prerequisites satisfied)"
 fi
 
 # Set up environment for gfx1151 (always needed)
@@ -220,11 +223,11 @@ fi
 
 # Fallback: try to locate via Python module to assist users who installed elsewhere
 if [ -z "$AOTRITON_INSTALLED_PREFIX" ]; then
-    AOTRITON_SITE_ROOT=$(python -c "import os,sys;\
+    AOTRITON_SITE_ROOT=$("$PYTHON_EXE" -c "import os,sys;\
 try:\n import pyaotriton; p=os.path.dirname(pyaotriton.__file__);\
  # common layout from source install keeps lib/ one level up from module
  cands=[os.path.abspath(os.path.join(p, '..')), os.path.abspath(os.path.join(p, '..', '..'))];\
- print('\n'.join(cands))\nexcept Exception:\n pass" 2>/dev/null | head -n1)
+print('\n'.join(cands))\nexcept Exception:\n pass" 2>/dev/null | head -n1)
     if [ -n "$AOTRITON_SITE_ROOT" ] && [ -d "$AOTRITON_SITE_ROOT/lib" ] && [ -f "$AOTRITON_SITE_ROOT/lib/libaotriton_v2.so" ]; then
         echo "Found AOTriton via Python site at: $AOTRITON_SITE_ROOT"
         export AOTRITON_INSTALLED_PREFIX="$AOTRITON_SITE_ROOT"
@@ -247,17 +250,17 @@ if ! should_skip_to "checkout"; then
     show_stage "Repository Checkout"
     echo "Checking out PyTorch repositories..."
     if [ ! -d "pytorch" ]; then
-        python pytorch_torch_repo.py checkout --repo-hashtag main --patchset main
+        "$PYTHON_EXE" pytorch_torch_repo.py checkout --repo-hashtag main --patchset main
     else
         echo "pytorch directory already exists, skipping checkout"
     fi
     if [ ! -d "pytorch_audio" ]; then
-        python pytorch_audio_repo.py checkout --repo-hashtag main
+        "$PYTHON_EXE" pytorch_audio_repo.py checkout --repo-hashtag main
     else
         echo "pytorch_audio directory already exists, skipping checkout"
     fi
     if [ ! -d "pytorch_vision" ]; then
-        python pytorch_vision_repo.py checkout --repo-hashtag main
+        "$PYTHON_EXE" pytorch_vision_repo.py checkout --repo-hashtag main
     else
         echo "pytorch_vision directory already exists, skipping checkout"  
     fi
@@ -265,13 +268,13 @@ if ! should_skip_to "checkout"; then
     # Triton requires special handling for patches - remove and recheckout if patches weren't applied
     if [ ! -d "triton" ]; then
         echo "Checking out triton with patches..."
-        python pytorch_triton_repo.py checkout --patch --patchset nightly
+        "$PYTHON_EXE" pytorch_triton_repo.py checkout --patch --patchset nightly
     else
         # Check if the triton patch was applied by looking for the fix function
         if ! grep -q "get_triton_version_suffix" triton/setup.py; then
             echo "Triton directory exists but patches not applied - removing and recheckingout..."
             rm -rf triton
-            python pytorch_triton_repo.py checkout --patch --patchset nightly
+            "$PYTHON_EXE" pytorch_triton_repo.py checkout --patch --patchset nightly
         else
             echo "triton directory already exists with patches applied, skipping checkout"
         fi
@@ -581,7 +584,7 @@ if should_skip_to "vision"; then
 fi
 
 show_stage "Build PyTorch with AOTriton for gfx1151"
-echo "Build command: python build_prod_wheels.py build ${BUILD_ARGS[*]}"
+echo "Build command: \"$PYTHON_EXE\" build_prod_wheels.py build ${BUILD_ARGS[*]}"
 # Honor skip flags regardless of --continue
 if [ "$SKIP_AUDIO" = "1" ]; then
     BUILD_ARGS+=(--no-build-pytorch-audio)
@@ -592,13 +595,13 @@ if [ "$SKIP_VISION" = "1" ]; then
     echo "Flag: --skip-vision enabled (torchvision will be skipped)"
 fi
 
-python build_prod_wheels.py build "${BUILD_ARGS[@]}"
+"$PYTHON_EXE" build_prod_wheels.py build "${BUILD_ARGS[@]}"
 
 show_stage "Build Complete"
 echo "Built wheels are in: $HOME/tmp/pyout"
 echo ""
 echo "To install (exact wheels for this run):"
-PYTAG=$(python -c 'import sys; print(f"cp{sys.version_info[0]}{sys.version_info[1]}")')
+PYTAG=$("$PYTHON_EXE" -c 'import sys; print(f"cp{sys.version_info[0]}{sys.version_info[1]}")')
 RUNSTAMP=$(date +%Y%m%d)
 OUTDIR="$HOME/tmp/pyout"
 

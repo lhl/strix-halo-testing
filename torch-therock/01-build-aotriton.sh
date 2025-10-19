@@ -1,13 +1,25 @@
 #!/usr/bin/env bash
 
-# Activate the conda environment if not already active
-if [[ "$CONDA_DEFAULT_ENV" != "therock" ]]; then
-    echo "Activating therock environment..."
-    conda activate therock
+set -euo pipefail
+
+PYTHON_EXE="${PYTHON_EXE:-python}"
+
+if ! command -v "$PYTHON_EXE" >/dev/null 2>&1; then
+    echo "Error: Python executable '$PYTHON_EXE' not found. Set PYTHON_EXE to point at your interpreter."
+    exit 1
+fi
+
+if ! "$PYTHON_EXE" -c "import torch" >/dev/null 2>&1; then
+    cat <<'EOF'
+Error: Could not import torch with the selected Python interpreter.
+Make sure you're running this script inside an environment where PyTorch (ROCm) is installed.
+You can run ./00-setup-env.sh to provision a suitable conda environment, or manage dependencies yourself.
+EOF
+    exit 1
 fi
 
 # Get the Python site-packages directory where PyTorch is installed
-PYTORCH_PATH=$(python -c "import torch; import os; print(os.path.dirname(torch.__file__))")
+PYTORCH_PATH=$("$PYTHON_EXE" -c "import torch, os; print(os.path.dirname(torch.__file__))")
 
 if [ -z "$PYTORCH_PATH" ]; then
     echo "Error: Could not find PyTorch installation path"
@@ -56,7 +68,7 @@ ninja install
 # Install Python site-package and shared libs (folded in from install-aotriton.sh)
 # Resolve install dir from current build tree to avoid relative path issues
 INSTALL_DIR="$(pwd)/install_dir"
-SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
+SITE_PACKAGES=$("$PYTHON_EXE" -c "import site; print(site.getsitepackages()[0])")
 TORCH_LIB_DIR="$SITE_PACKAGES/torch/lib"
 
 # Ensure torch lib dir exists

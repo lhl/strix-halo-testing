@@ -6,6 +6,25 @@ After a few not-so-successful approaches, this one works:
 - Build PyTorch leveraging our own aotriton and some extra patches we apply to the TheRock PyTorch build: `02-build-pytorch-with-aotriton-gfx1151.sh`
 - Manually install the `.whl` files
 
+## Quick Start
+
+Optionally set up a fresh conda/mamba environment (or reuse your own):
+
+```
+# defaults to using `therock` env
+./00-setup-env.sh [MYENV]
+```
+
+Run the builds from the Python environment you want to target:
+
+```
+# inherits PYTHON_EXE if you need to point at a specific interpreter
+./01-build-aotriton.sh
+./02-build-pytorch-with-aotriton-gfx1151.sh
+```
+
+Both scripts assume ROCm-enabled PyTorch is already installed in that interpreter; the setup script above provisions a default `therock` environment if you want a ready-made option.
+
 
 ## Results
 
@@ -119,6 +138,7 @@ Success with torch.bfloat16
 ```
 
 
+
 TheRock PyTorch (no FA):
 ```
 🐟 ❯ python 05-attention-bench.py
@@ -225,4 +245,3 @@ Success with torch.float16
 Testing with torch.bfloat16
 Success with torch.bfloat16
 ```
-

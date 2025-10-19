@@ -5,12 +5,11 @@ set -e  # Exit on any error
 # Get environment name from argument or default to "therock"
 ENV_NAME="${1:-therock}"
 
-echo "=== TheRock Complete Environment Setup ==="
-echo "Target environment: $ENV_NAME"
+echo "=== TheRock Complete Environment Setup (env: $ENV_NAME) ==="
 
 # Function to check if conda/mamba environment exists
 env_exists() {
-    conda env list | grep -q "^$ENV_NAME "
+    conda env list | awk '{print $1}' | grep -Fx "$ENV_NAME" >/dev/null 2>&1
 }
 
 # Step 1: Create environment if it doesn't exist
@@ -58,6 +57,10 @@ echo "=== Installing TheRock PyTorch ==="
 "$ENV_PREFIX/bin/python" -m pip install \
   --index-url https://d2awnip2yjpvqn.cloudfront.net/v2/gfx1151/ \
   torch -U --force-reinstall
+
+echo ""
+echo "=== Installing NumPy ==="
+"$ENV_PREFIX/bin/python" -m pip install numpy -U
 
 # if we want FA
 # python -m pip install \
