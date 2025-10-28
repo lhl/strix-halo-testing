@@ -93,7 +93,7 @@ These are guidance bands; exact shares should be measured per export (quant type
 | Softmax | <1% | 1–2% | F32 | reduce/exp | Custom | Memory bound |
 
 **Implementation**:
-- INT8 via dp4a on SM; no INT8 Tensor Cores (requires sm_61+ for dp4a).
+- INT8 via dp4a on SM; no INT8 Tensor Cores (requires sm_61+ for dp4a; sm_60/GP100 lacks dp4a, sm_61/GP102-104-106 has it).
 - FP16 arithmetic supported but no MMA; attention uses tile/vector kernels (slower).
 - File refs: llama.cpp/ggml/src/ggml-cuda/common.cuh (feature detection), llama.cpp/ggml/src/ggml-cuda/vecdotq.cuh (dp4a)
 
@@ -277,6 +277,7 @@ Model: d=4096, df≈11008, L=32, S small
 - If effective HBM BW ≈ 800 GB/s (example), tg_weight ≈ 800e9 / 6.4e6 ≈ 125k tokens/s theoretical upper bound for weight path alone
 
 **Reality**: Real tg is far lower due to parallelism/latency/launch overhead, and because attention + misc ops add time. Use perf to calibrate BW_eff and per‑op weights actually touched. This sketch intentionally overestimates to be conservative on identifying the bottleneck: bandwidth dominates.
+In practice, weight tile reuse, caching, and kernel overlap further reduce effective bytes per token compared to this upper bound.
 
 
 ## Build flags and knobs
@@ -289,7 +290,8 @@ Model: d=4096, df≈11008, L=32, S small
 **HIP specific**:
 - `GGML_HIP_ROCWMMA_FATTN`: enable WMMA via rocWMMA for attention
 - `GGML_HIP_NO_MMQ_MFMA`: disable MFMA path
-- `GGML_HIP_GRAPHS`, `GGML_HIP_VMM`: graph/memory management knobs
+- `GGML_HIP_GRAPHS`: enable HIP graphs
+- `GGML_HIP_NO_VMM` (HIP) and `GGML_CUDA_NO_VMM` (CUDA): disable VMM; HIP VMM is disabled by default via CMake option, enable by passing `-DGGML_HIP_NO_VMM=OFF`
 - File ref: llama.cpp/ggml/src/ggml-hip/CMakeLists.txt
 
 
@@ -299,5 +301,3 @@ Model: d=4096, df≈11008, L=32, S small
 - **RDNA attention**: Invest in vector/tile FA kernels and shared‑mem tiling to close the gap to tensor‑accelerated attention on NVIDIA/CDNA.
 - **KV cache format**: FP16 vs Q8_0 tradeoffs (memory vs attention FP16 compute). Long‑context runs can become attention‑bound; choose KV precision accordingly.
 - **Stream‑K tuning**: Already used on NVIDIA Volta+ and CDNA; improve decomposition thresholds for better occupancy on tall/wide GEMMs.
-
-
