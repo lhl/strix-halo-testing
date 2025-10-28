@@ -301,3 +301,28 @@ In practice, weight tile reuse, caching, and kernel overlap further reduce effec
 - **RDNA attention**: Invest in vector/tile FA kernels and shared‑mem tiling to close the gap to tensor‑accelerated attention on NVIDIA/CDNA.
 - **KV cache format**: FP16 vs Q8_0 tradeoffs (memory vs attention FP16 compute). Long‑context runs can become attention‑bound; choose KV precision accordingly.
 - **Stream‑K tuning**: Already used on NVIDIA Volta+ and CDNA; improve decomposition thresholds for better occupancy on tall/wide GEMMs.
+
+
+## Measuring real‑world performance
+
+### Baseline tokens/s with llama-bench
+- Run `llama-bench` on the standard llama.cpp LLaMA-2 7B quant configs (INT8 and FP16 baselines) for both `decode` and `prefill` passes. Capture the reported tokens/s and the optional per-op timings (build with `-DLLAMA_CUDA_DEBUG=ON` to emit kernel timings).
+- Derive an empirical effective bandwidth per token: `bytes_touched_per_layer / measured_time`. Compare this to the roofline estimate to quantify how much reuse, caching, and overlap shrink the effective bytes vs the theoretical 6.4 MB/token.
+- When comparing architectures, normalize by theoretical HBM/throughput to express results as % of peak compute or % of peak bandwidth; keep precisions separate (INT8 vs FP16) to avoid mixing tensor-unit ceilings.
+
+### Kernel microbenchmarks and GEMM shape sensitivity
+- `tests/test-backend-ops perf` exercises individual kernels (mmq, fattn, mmf) with tunable shapes and precisions. Use it to sweep matrix aspect ratios that match production (tall/skinny, wide/tall, small batch) and record sustained GFLOPs/GB/s.
+- Not all GEMMs are equal: llama.cpp matmuls span from square projections to skinny attention blocks. Measure how throughput drops outside TensorCore-friendly tile sizes to understand which paths dominate time even when aggregate MAC counts are similar.
+- Cross-check microbench results with the shapes invoked during `llama-bench` by logging `ne` dimensions; this highlights when e2e stalls stem from shape-specific underutilization vs scheduler gaps.
+
+### Hardware profiling for ground truth
+- **NVIDIA**: Nsight Compute/Nsight Systems provide per-kernel `dram__bytes`, TensorCore utilization, occupancy, and timeline gaps. Export CSV traces and align with llama-bench timers to attribute time to memory stalls vs compute.
+- **AMD**: rocprof / Omniperf report MFMA occupancy, global memory bytes, and wave occupancy. Enable rocWMMA counters where available to confirm attention WMMA usage on RDNA3/CDNA.
+- From profiler counters compute effective bandwidth and math throughput per kernel, then aggregate per token/layer. This validates the empirical bytes/token numbers and shows where overlap hides latency.
+
+### Interpreting results and known limitations
+- Warmup effects and cache residency skew early tokens; discard the first N iterations or run long prompts before sampling metrics.
+- Mixed precision complicates “GFLOPs” ceilings—track INT8 vs FP16 ops separately and compare to the correct hardware peak for each.
+- HIP profiling can miss counters on some SKUs; fall back to timeline traces when utilization numbers are unavailable.
+- Dynamic kernel selection (mmq vs BLAS, WMMA vs tile) depends on shape and build flags; log the chosen kernels during bench runs so measurements map to code paths.
+- Even with detailed data, overlap between compute and memory transfers means the simple roofline is an upper bound. The methodologies above turn the gap between theory and practice into measurable numbers you can track across code revisions.
