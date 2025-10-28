@@ -6,8 +6,8 @@ This doc summarizes how llama.cpp runs inference on NVIDIA (CUDA) and AMD (HIP) 
 
 - HIP reuses the CUDA kernel sources via hipify and builds against rocBLAS/hipBLAS; most logic is shared, diverging based on device feature macros.
 - Weight GEMMs dominate per‑token work and are typically memory‑bandwidth bound at inference (batch=1). Quantized INT8 weight GEMMs usually determine tg for short and medium context lengths; attention matmuls (FP16 path) take over at large contexts.
-- NVIDIA Ampere/Ada: INT8 on Tensor Cores is very fast and usually hidden behind HBM bandwidth; FP16 FlashAttention is fast. NVIDIA Turing: INT8 Tensor Cores are good but less capable than Ampere. NVIDIA Pascal/Volta: no INT8 Tensor Cores (dp4a/WMMA paths).
-- AMD RDNA3: FP16 WMMA for attention is available (rocWMMA). INT8 performance is not dramatically higher than FP16 on RDNA3; tokens/s still benefits from INT8 mainly by halving bytes/weight (memory bound). AMD CDNA2/3 (MI210/MI300): MFMA INT8 is available; attention WMMA availability depends on rocWMMA version.
+- NVIDIA Ampere/Ada: INT8 on Tensor Cores is very fast and usually hidden behind GDDR/HBM bandwidth; FP16 FlashAttention is fast. NVIDIA Turing: INT8 Tensor Cores are good but less capable than Ampere. NVIDIA Pascal/Volta: no INT8 Tensor Cores (dp4a/WMMA paths).
+- AMD RDNA3: FP16 WMMA for attention is available (rocWMMA). INT8 performance is not dramatically higher than FP16 on RDNA3 (specs are same/CU/clock); tokens/s still benefits from INT8 mainly by halving bytes/weight (memory bound). AMD CDNA2/3 (MI210/MI300): MFMA INT8 is available; attention WMMA availability depends on rocWMMA version.
 - Estimating tg: weight GEMMs are bandwidth bound, so tg ≈ memory_bandwidth / bytes_per_token_of_weights, until FP16 attention compute dominates at long contexts.
 
 
