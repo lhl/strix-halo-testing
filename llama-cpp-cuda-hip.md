@@ -1,6 +1,6 @@
 # llama.cpp CUDA vs HIP backends: architecture, precision, bottlenecks, and throughput estimates
 
-This doc summarizes how llama.cpp runs inference on NVIDIA (CUDA) and AMD (HIP) GPUs, how kernels and precisions differ by architecture, where bottlenecks usually land, and how to estimate token throughput (tg) from hardware characteristics. It is grounded in the ggml backends and current code in this repo.
+This doc summarizes how llama.cpp runs inference on NVIDIA (CUDA) and AMD (HIP) GPUs, how kernels and precisions differ by architecture, where bottlenecks usually land, and how to estimate performance from hardware characteristics. It is grounded in the ggml backends and current code in this repo.
 
 ## Key takeaways
 
