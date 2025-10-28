@@ -1,0 +1,182 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import glob
+import warnings
+
+
+def _sanitize_env() -> None:
+    # Avoid noisy warnings: AMD_SERIALIZE_KERNEL is treated as boolean in PyTorch env parsing
+    v = os.environ.get("AMD_SERIALIZE_KERNEL")
+    if v and v.strip() not in ("0", "1"):
+        # Use 1 to keep debugging-friendly sync behavior if user passed a non-boolean value
+        os.environ["AMD_SERIALIZE_KERNEL"] = "1"
+
+
+def _maybe_force_load_aotriton(torch) -> None:
+    try:
+        libdir = os.path.join(os.path.dirname(torch.__file__), "lib")
+        cands = sorted(glob.glob(os.path.join(libdir, "libaotriton_v2.so*")))
+        if cands:
+            torch.ops.load_library(cands[0])
+    except Exception:
+        # Best effort only; if this fails, SDPA can still run via AOTriton
+        pass
+
+
+def main() -> int:
+    _sanitize_env()
+    try:
+        import torch
+        import torch.nn.functional as F
+    except Exception as e:
+        print(f"Failed to import torch: {e}")
+        return 1
+
+    print("=== PyTorch & Device Information ===")
+    print(f"PyTorch: {torch.__version__}")
+    print(f"HIP: {getattr(torch.version, 'hip', None)}")
+    print(f"CUDA: {getattr(torch.version, 'cuda', None)}")
+
+    # CUDA/ROCm devices
+    if torch.cuda.is_available():
+        print(f"\nCUDA/ROCm: {torch.cuda.device_count()} device(s)")
+        for i in range(torch.cuda.device_count()):
+            try:
+                props = torch.cuda.get_device_properties(i)
+                free_mem, total_mem = torch.cuda.mem_get_info(i)
+                print(f"  [{i}] {props.name}")
+                print(f"      Memory: {total_mem / 1024**3:.2f} GB total, {free_mem / 1024**3:.2f} GB free")
+                print(f"      Compute: {props.major}.{props.minor}")
+                if hasattr(props, 'multi_processor_count'):
+                    print(f"      SM/CU count: {props.multi_processor_count}")
+            except Exception as e:
+                print(f"  [{i}] Query error: {e}")
+
+    # Apple Silicon MPS
+    if torch.backends.mps.is_available():
+        print(f"\nApple MPS: Available")
+        print(f"  Built: {torch.backends.mps.is_built()}")
+
+    # Intel XPU
+    try:
+        if hasattr(torch, 'xpu') and torch.xpu.is_available():
+            print(f"\nIntel XPU: {torch.xpu.device_count()} device(s)")
+            for i in range(torch.xpu.device_count()):
+                try:
+                    print(f"  [{i}] {torch.xpu.get_device_name(i)}")
+                except Exception:
+                    print(f"  [{i}] <device>")
+    except Exception:
+        pass
+
+    # Prefer the new API surface for SDPA
+    from torch.nn.attention import sdpa_kernel, SDPBackend
+    from torch.backends.cuda import (
+        is_flash_attention_available,
+        flash_sdp_enabled,
+        mem_efficient_sdp_enabled,
+        math_sdp_enabled,
+        preferred_rocm_fa_library,
+        SDPAParams,
+        can_use_flash_attention,
+        can_use_efficient_attention,
+    )
+
+    # Environment overview
+    print("\n=== Environment Variables ===")
+    for var in (
+        "TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL",
+        "PYTORCH_ROCM_ARCH",
+        "TORCH_ROCM_FA_PREFER_CK",
+        "HSA_OVERRIDE_GFX_VERSION",
+    ):
+        print(f"{var}: {os.getenv(var, 'Not set')}")
+
+    # AOTriton ops visibility
+    _maybe_force_load_aotriton(torch)
+    print("\n=== AOTriton Ops ===")
+    ops = getattr(torch.ops, "aotriton", None)
+    print("torch.ops.aotriton:", [x for x in dir(ops) if not x.startswith("_")] if ops else "none")
+
+    # SDPA feature flags
+    print("\n=== SDPA Feature Flags ===")
+    print(f"is_flash_attention_available: {is_flash_attention_available()}")
+    print(f"flash_sdp_enabled: {flash_sdp_enabled()}")
+    print(f"mem_efficient_sdp_enabled: {mem_efficient_sdp_enabled()}")
+    print(f"math_sdp_enabled: {math_sdp_enabled()}")
+    try:
+        from torch.backends.cuda import cudnn_sdp_enabled  # type: ignore[attr-defined]
+        print(f"cudnn_sdp_enabled: {cudnn_sdp_enabled()}")
+    except Exception:
+        print("cudnn_sdp_enabled: n/a")
+    print(f"preferred_rocm_fa_library(): {preferred_rocm_fa_library()}")
+
+    if not torch.cuda.is_available():
+        print("\nCUDA/HIP device not available; skipping runtime backend execution checks.")
+        return 0
+
+    # Prepare tiny tensors
+    device = "cuda"
+    dtype = torch.float16
+    q = torch.randn(1, 1, 128, 64, device=device, dtype=dtype)
+    k = torch.randn(1, 1, 128, 64, device=device, dtype=dtype)
+    v = torch.randn(1, 1, 128, 64, device=device, dtype=dtype)
+
+    # Check whether specific optimized backends can be used for these params
+    print("\n=== Backend Viability (can_use_*) ===")
+    try:
+        params = SDPAParams(q, k, v, None, 0.0, True, False)
+        print("can_use_flash_attention:", can_use_flash_attention(params, debug=True))
+        print("can_use_efficient_attention:", can_use_efficient_attention(params, debug=True))
+    except TypeError as e:
+        print(f"SDPAParams construction failed (signature mismatch?): {e}")
+
+    # Try executing with each backend explicitly
+    print("\n=== Forced Execution Per Backend ===")
+    def _shorten_err(ex: Exception) -> str:
+        s = str(ex)
+        # Take the first non-empty line
+        for line in s.splitlines():
+            line = line.strip()
+            if line:
+                s = line
+                break
+        # Normalize common HIP error noise
+        if "HIP error:" in s:
+            if "invalid argument" in s:
+                return "HIP error: invalid argument"
+            return s
+        if "No available kernel" in s:
+            return "No available kernel"
+        return s[:160]
+
+    def try_backend(backend):
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", UserWarning)
+                with sdpa_kernel(backend):
+                    _ = F.scaled_dot_product_attention(q, k, v, is_causal=True)
+            return "OK"
+        except Exception as ex:
+            return f"ERR: {_shorten_err(ex)}"
+
+    checks = [
+        ("FLASH_ATTENTION", SDPBackend.FLASH_ATTENTION),
+        ("EFFICIENT_ATTENTION", SDPBackend.EFFICIENT_ATTENTION),
+        ("MATH", SDPBackend.MATH),
+        ("CUDNN_ATTENTION", SDPBackend.CUDNN_ATTENTION),
+    ]
+    for name, be in checks:
+        msg = try_backend(be)
+        print(f"{name}: {msg}")
+        if name == "EFFICIENT_ATTENTION" and msg.startswith("ERR"):
+            print("Note: Efficient attention can be unstable on ROCm nightlies. Prefer FLASH_ATTENTION.")
+
+    print("\nDone.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
