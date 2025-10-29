@@ -1,4 +1,4 @@
-# Improving llama.cpp HIP Backent Performance
+# Improving llama.cpp HIP Backend Performance
 
 Recently some people on the Strix Halo HomeLab Discord noticed that the HIP rocWMMA backend actually performed much worse than the HIP backend (especially for decode/token generation) as context got longer.
 
