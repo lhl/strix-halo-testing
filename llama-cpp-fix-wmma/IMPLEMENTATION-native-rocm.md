@@ -48,6 +48,8 @@
   - D/shape matches supported configs.
 - Prefill: prefer native WMMA/MFMA. Decode: keep TILE/VEC unless native wins for large S; always safe‑fallback to TILE.
 - If a native config is missing, fall back to TILE; if TILE config is missing, fall back to VEC (guard already present).
+- Insert the ROCm-native dispatch ahead of the legacy Volta WMMA selection in `fattn.cu` so CUDA maintains its existing behaviour.
+- Drive kernel selection from a HIP capability descriptor (wave size, LDS cap, MFMA/WMMA availability) instead of borrowing CUDA macros such as `turing_mma_available`.
 
 ## Coverage Matrix and Fallbacks
 
@@ -65,6 +67,12 @@
 - Selection wiring:
   - Update `fattn.cu` to add native ROCm cases before legacy WMMA; gated by arch and shape tables.
   - Keep current WMMA (legacy) and TILE/VEC as fallbacks.
+
+### HIP backend isolation
+- Split HIP builds away from the blanket “reuse every CUDA .cu” rule by introducing HIP-specific source lists (native WMMA/MFMA files, TILE fallbacks) compiled from `ggml-hip/`.
+- Factor `common.cuh` into CUDA vs HIP headers so HIP defines (`WAVE_SIZE`, async-copy availability, MFMA flags) do not rely on CUDA-specific macros.
+- Centralise HIP feature detection in a capability table consumed by MMQ/FA helpers, avoiding checks on CUDA-only predicates (`turing_mma_available`, `GGML_CUDA_CC_*`).
+- Update build documentation and CI to exercise HIP with native kernels enabled/disabled, catching regressions like the rocWMMA slowdown noted this cycle.
 
 ## Tuning knobs and tables
 - Per‑arch config table entries keyed by (DKQ, DV, ncols):
@@ -124,6 +132,9 @@
 - [ ] GQA/ALiBi support and guards; correct ncols2 mapping by gqa_ratio
 - [ ] Launch parameter tables per arch for occupancy: nwarps, nbatch_fa, nbatch_K, cols_per_block
 - [ ] Selection logic integration, with fallbacks to TILE/VEC on unsupported shapes
+- [ ] HIP capability table + dispatch refactor (stop depending on CUDA-only macros)
+- [ ] Split HIP build sources/CMake from CUDA path; dedicate HIP `common` header
+- [ ] CI/build coverage for HIP native kernels (native on/off) to catch regressions
 - [ ] Template instantiation limits and pruning to control compile time/binary size
 - [ ] Correctness tests vs TILE across a grid of (D, S, gqa_ratio, softcap, bf16/fp16)
 - [ ] Performance validation on RDNA3, RDNA4, CDNA2, CDNA3; capture counters and tokens/s
@@ -138,4 +149,3 @@
 - rocprof/Omniperf: waves/CU, active blocks/CU, LDS usage, global bytes, VALU vs matrix utilization, barrier count.
 - L2/L1 hit rates when double‑buffering is active.
 - Register usage per thread and spill counts.
-
